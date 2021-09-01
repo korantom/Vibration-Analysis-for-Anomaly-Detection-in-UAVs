@@ -41,6 +41,7 @@
   - [Zephyr Device tree guide](https://docs.zephyrproject.org/latest/guides/dts/index.html)
   - [Device tree general youtube video](https://www.youtube.com/watch?v=Nz6aBffv-Ek)
 - [other](https://www.youtube.com/watch?v=oOoyRDXzO6g)
+- [Qt Creator - zephyr ide](https://www.qt.io/product/development-tools)
 ---
 # Build Guide
 - `cd ~/zephyrproject`
