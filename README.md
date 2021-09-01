@@ -48,3 +48,10 @@
 - `minicom -D /dev/cu.usbmodemC1E9B7D03`
 - `west flash --gdb-serial /dev/cu.usbmodemC1E9B7D01`
 - restart device to run app
+
+## Run just preprocessor
+- make error in code
+- run west build, should fail -> you will see how it was compiled
+- take the gcc compilation command and:
+  - add -E
+  - remove error flags until it works (-MD -MT CMakeFiles/app.dir/src/main.c.obj -MF CMakeFiles/app.dir/src/main.c.obj.d -o CMakeFiles/app.dir/src/main.c.obj)
