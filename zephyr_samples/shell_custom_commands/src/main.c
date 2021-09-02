@@ -58,8 +58,22 @@ static int cmd_set_value(const struct shell *shell, size_t argc, char **argv, vo
 
 SHELL_SUBCMD_DICT_SET_CREATE(sub_value, cmd_set_value,
                              (low, 0), (med, 5), (high, 10));
-SHELL_CMD_REGISTER(set_value, &sub_value, "Set value", NULL);
-SHELL_CMD_REGISTER(print_value, NULL, "Print value", cmd_print_value);
+// SHELL_CMD_REGISTER(set_value, &sub_value, "Set value", NULL);
+// SHELL_CMD_REGISTER(print_value, NULL, "Print value", cmd_print_value);
+
+//----------------------------------------------------------------------------//
+/* Sub commands */
+
+SHELL_STATIC_SUBCMD_SET_CREATE(sub_commands,
+                               SHELL_CMD(set, &sub_value, "Set value", NULL),
+                               SHELL_CMD(print, NULL, "Print value", cmd_print_value),
+                               SHELL_SUBCMD_SET_END);
+
+SHELL_CMD_REGISTER(value, &sub_commands, "Sub commands example", NULL);
+
+//----------------------------------------------------------------------------//
+/* Dynamic commands */
+//TODO
 
 void main(void)
 {
