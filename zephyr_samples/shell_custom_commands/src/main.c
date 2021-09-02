@@ -35,6 +35,31 @@ static int cmd_print_params(const struct shell *shell, size_t argc, char **argv)
 SHELL_CMD_ARG_REGISTER(print_params, NULL, "Prints all passed params ", cmd_print_params, 0, 0);
 
 //----------------------------------------------------------------------------//
+/* Dictionary command */
+
+int value = 0;
+
+static int cmd_print_value(const struct shell *shell, size_t argc, char **argv)
+{
+    ARG_UNUSED(argc);
+    ARG_UNUSED(argv);
+    shell_print(shell, "Value = %d", value);
+    return 0;
+}
+
+static int cmd_set_value(const struct shell *shell, size_t argc, char **argv, void *data)
+{
+    int old_value = value;
+    value = (int)data;
+    shell_print(shell, "Value changed from %d to %s: %d", old_value, argv[0], value);
+    cmd_print_value(shell, 0, NULL);
+    return 0;
+}
+
+SHELL_SUBCMD_DICT_SET_CREATE(sub_value, cmd_set_value,
+                             (low, 0), (med, 5), (high, 10));
+SHELL_CMD_REGISTER(set_value, &sub_value, "Set value", NULL);
+SHELL_CMD_REGISTER(print_value, NULL, "Print value", cmd_print_value);
 
 void main(void)
 {
