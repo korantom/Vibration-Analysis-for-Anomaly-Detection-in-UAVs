@@ -25,3 +25,43 @@
           #define EXPAND_AND_QUOTE(str) QUOTE(str)
           ```
 
+## Node aliases
+- a way to refer to a device node, that makes it easily accessible in code (DT_ALIAS(alias))
+  ```dts
+  / {
+     aliases {
+             my-uart = &uart0;
+     };
+  };
+  ```
+- to access in code
+  ```c
+  #define UART_NODE	DT_ALIAS(my_uart)
+  ```
+- !although alias was defined using dash "-", to access it in code we replace all dashes with underscores "_"!
+
+## Add a device to device-tree using overlay
+- [medium article](https://medium.com/home-wireless/using-a-pwm-device-in-zephyr-7100d089f15c)
+- [example app using overlay](https://github.com/zephyrproject-rtos/zephyr/tree/main/samples/bluetooth/hci_spi)
+- [youtube video](https://www.youtube.com/watch?v=oOoyRDXzO6g)
+- inside a zephyr_app folder, that is somewhere within your zephyrproject (the env created by west), create a boards/ directory and place an overlay file there
+- **zephyrproject/** #created by west
+  - bootloader/
+  - modules/
+  - tools/
+  - zephyr/
+  - ..../
+    - zephyr_app/
+      - src/
+      - ...
+      - ...
+      - boards/
+        - name_of_board.overlay #place file here
+- inside the overlay file we can define new nodes, aliases etc. or overwrite them
+
+
+## PWM (Pulse Width modulation)
+- https://en.wikipedia.org/wiki/Pulse-width_modulation
+- https://www.youtube.com/watch?v=5nwNKPs2gco
+- https://www.youtube.com/watch?v=GQLED3gmONg
+- TODO
