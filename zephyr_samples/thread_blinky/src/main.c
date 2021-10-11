@@ -18,6 +18,13 @@ struct led
     const char *gpio_pin_name;
 };
 
+typedef struct blink_params
+{
+    uint32_t id;
+    uint32_t count;
+    uint32_t sleep_ms;
+} blink_params;
+
 static const struct led led0 = {
     .spec = GPIO_DT_SPEC_GET_OR(LED0_NODE, gpios, {0}),
     .gpio_pin_name = DT_PROP_OR(LED0_NODE, label, ""),
@@ -28,11 +35,15 @@ static const struct led led1 = {
     .gpio_pin_name = DT_PROP_OR(LED1_NODE, label, ""),
 };
 
-static const struct led arr[] = {led0, led1};
+static const struct led leds_list[] = {led0, led1};
+static const blink_params blink_params_list[] = {
+    {.id = 0, .count = 20, .sleep_ms = 1500},
+    {.id = 1, .count = 30, .sleep_ms = 250},
+};
 
 int set_up_leds();
 void toggle_led(const struct led *led, uint32_t sleep_ms, uint32_t id, bool on);
-void blink(int id, uint32_t count, uint32_t sleep_ms);
+void blink(blink_params *params);
 
 void main(void)
 {
@@ -46,10 +57,10 @@ void main(void)
 
 int set_up_leds(void)
 {
-    for (size_t i = 0; i < sizeof(arr) / sizeof(struct led); i++)
+    for (size_t i = 0; i < sizeof(leds_list) / sizeof(struct led); i++)
     {
 
-        const struct gpio_dt_spec *spec = &arr[i].spec;
+        const struct gpio_dt_spec *spec = &leds_list[i].spec;
         int ret;
 
         if (!device_is_ready(spec->port))
@@ -62,7 +73,7 @@ int set_up_leds(void)
         if (ret != 0)
         {
             printk("Error %d: failed to configure pin %d (LED '%s')\n",
-                   ret, spec->pin, arr[i].gpio_pin_name);
+                   ret, spec->pin, leds_list[i].gpio_pin_name);
             return 1;
         }
         gpio_pin_set_dt(spec, 0);
@@ -77,15 +88,15 @@ void toggle_led(const struct led *led, uint32_t sleep_ms, uint32_t id, bool on)
     k_msleep(sleep_ms);
 }
 
-void blink(int id, uint32_t count, uint32_t sleep_ms)
+void blink(blink_params *params)
 {
     bool is_on = false;
-    for (uint32_t i = 0; i < count; i++)
+    for (uint32_t i = 0; i < params->count; i++)
     {
-        toggle_led(&arr[id], sleep_ms, id, !is_on);
+        toggle_led(&leds_list[params->id], params->sleep_ms, params->id, !is_on);
         is_on = !is_on;
     }
 }
 
-K_THREAD_DEFINE(t1_id, STACKSIZE, blink, 1, 20, 1500, PRIORITY, 0, 0);
-K_THREAD_DEFINE(t0_id, STACKSIZE, blink, 0, 50, 200, PRIORITY, 0, 0);
+K_THREAD_DEFINE(t0_id, STACKSIZE, blink, &blink_params_list[0], NULL, NULL, PRIORITY, 0, 0);
+K_THREAD_DEFINE(t1_id, STACKSIZE, blink, &blink_params_list[1], NULL, NULL, PRIORITY, 0, 0);
