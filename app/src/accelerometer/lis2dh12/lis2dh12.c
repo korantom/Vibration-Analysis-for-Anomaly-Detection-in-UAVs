@@ -160,9 +160,104 @@ void lis2dh12_enable_fifo(void)
 	i2c_reg_write_byte(i2c_dev, LIS_ADDRESS, ADDR_CTRL_REG5, 0x48);		// ENABLE FIFO, LATCH ENABLE ??
 }
 
+int check_flags();
+
 int lis2dh12_read_buffer(k_timeout_t timeout)
 {
-	return 0;
+	// uint8_t temp;
+	static uint8_t buf[6];
+
+	/* The explananttion of the calculaion below:
+	Full scale range = +-4G,  range = 8G
+	output data accuracy = 10-bit which is 1024 values (-512 to 511)
+
+	Raw data is signed, and left aligned, so to
+	preserve sign-bit, we interpret it as s16_t
+	and divide by 64, to right align it(discard
+	6 bits, '16-10', 2^6=64). Can't bit shift,
+	since it is a signed integer.
+
+	So value converted to m/s^2 will be
+	raw/64*(8G/1024) or raw*(8*9.80665/1024/64) m/s^2 = 0.001197100830078125f.
+	*/
+
+	const double multiplier = 0.001197100830078125f;
+
+	// Take semaphore (interrupt occured)
+	int timeout_res = k_sem_take(&gpio_sem, timeout);
+	if (timeout_res)
+	{
+		return timeout_res;
+	}
+
+	// TODO: check flags (watermark, overrun, sample_count, ...)
+	int sample_count = check_flags();
+	if (sample_count <= 0)
+	{
+		return 0;
+	}
+
+	for (int i = 0; i < sample_count; i++)
+	{
+		i2c_burst_read(i2c_dev, LIS_ADDRESS, 0x80 | ADDR_OUT_X_L, buf, sizeof(buf));
+		// raw * (8*9.80665/1024/64)
+		f_raw_output_data[i][0] = *(int16_t *)&buf[0] * multiplier;
+		f_raw_output_data[i][1] = *(int16_t *)&buf[2] * multiplier;
+		f_raw_output_data[i][2] = *(int16_t *)&buf[4] * multiplier;
+	}
+
+	return sample_count;
+}
+
+// TODO: needed? when to call?
+// void latch_clear()
+// {
+// 	uint8_t temp;
+// 	HANDLE_ERROR(READ_REG(ADDR_INT1_SRC, &temp)); // latch clear ??
+// 	HANDLE_ERROR(READ_REG(ADDR_INT2_SRC, &temp)); // latch clear ??
+// }
+
+int check_flags()
+{
+
+	uint8_t temp;
+
+	/* read flags ----------------------------------------------------------- */
+
+	// latch_clear(); //?
+
+	// read state of fifo (depending on setting, watermark/overrun/samplecount)
+	HANDLE_ERROR(READ_REG(ADDR_FIFO_SRC_REG, &temp));
+
+	/* mask flags ----------------------------------------------------------- */
+
+	// TODO: what is temp & 0xC0
+
+	bool watermark = temp & 0x80;
+	bool overrun = temp & 0x40;
+	bool empty = temp & 0x20;
+	int sample_count = temp & 0x1f;
+
+	printk("sample_count = %d, empty %d, watermark: %d, overrun: %d\n",
+		   sample_count, (int)empty, (int)watermark, (int)overrun);
+
+	/* check overrun -------------------------------------------------------- */
+	if (overrun)
+	{
+		printk("OVERRUN\n");
+		return -1;
+	}
+	/* ---------------------------------------------------------------------- */
+
+	if (sample_count == 0)
+	{
+		printk("0 samples\n");
+		return 0;
+	}
+
+	/* ---------------------------------------------------------------------- */
+
+	return sample_count;
 }
 
 /*
