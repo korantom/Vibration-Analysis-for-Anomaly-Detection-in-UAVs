@@ -1,0 +1,5 @@
+
+&i2c0 {
+	status = "ok";
+	clock-frequency = <I2C_BITRATE_FAST>;
+};
