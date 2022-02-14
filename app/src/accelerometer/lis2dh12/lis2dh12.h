@@ -1,10 +1,26 @@
-/*Register Addresses*/
+#ifndef __LIS2DH12_H__
+#define __LIS2DH12_H__
 
-#ifndef __LIS2DH12_FIFO_H__
-#define __LIS2DH12_FIFO_H__
+// TODO: remove unnecessary includes
 
 #include <kernel.h>
+#include <zephyr.h>
+#include <device.h>
+#include <sys/printk.h>
+#include <drivers/i2c.h>
+#include <drivers/gpio.h>
+#include <kernel.h>
+#include <nrfx.h>
+#include <stdlib.h>
+#include <stdio.h>
 
+#include <logging/log.h>
+
+#include "../../common.h"
+
+/* -------------------------------------------------------------------------- */
+
+/* Register Addresses */
 #define ADDR_WHO_AM_I 0x0F
 
 #define ADDR_CTRL_REG0 0x1E
@@ -64,12 +80,49 @@
 
 #define LIS_ADDRESS 0x19
 
+/* -------------------------------------------------------------------------- */
+
+#define I2C0_LABEL DT_LABEL(DT_NODELABEL(i2c0))
+
+/* -------------------------------------------------------------------------- */
+
+// TODO: Add comments
+
+/**
+ * @brief   start the LIS sensor?
+ * @details get device bindings (i2c, gpio), configure gpio: add interupt callback, ...
+ * @retval  TODO: ...
+ */
 int lis2dh12_init();
 
-void lis2dh12_fifo_read_thread();
+/**
+ * @brief   configure the sensor ...
+ * @details ... by wiriting to the registers, ...
+ * TODO: Add all config options
+ */
+void lis2dh12_config();
 
-void lis2dh12_config(void);
+/**
+ * @brief   ... enable interrupt on ...?
+ * @details configure gpio: ..., configure i2c: write to register ...
+ * @note    has to be done after lis2dh12_config(), since ...?
+ * @retval  TODO: ...
+ */
+int lis2dh12_enable_interrupt();
 
-float lis2dh12_convert_output(s32_t val);
+/**
+ * @brief   TODO: ?
+ * @details TODO: ?
+ */
+void lis2dh12_enable_fifo(void);
 
-#endif // __LIS2DH12_FIFO_H__
+/**
+ * @brief   ... read n values from the FIFO, ..., TODO: (ringbuffer, global/ref array, msg_queue)
+ * @details ... take sem (interrupt happened, data ready in buffer), check flags (watermark, overflow), read data from buffer (directly to ringbuf or indirectly to tmp arr then ...)
+ * @param timeout
+ * @retval ... sammple count if >= 0, timeout if negative?
+ */
+int lis2dh12_read_buffer(k_timeout_t timeout); // ringbuffer
+// int lis2dh12_read_buffer(double f_raw_output_data[32][3], k_timeout_t timeout); // array
+
+#endif // __LIS2DH12_H__
