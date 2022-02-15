@@ -1,4 +1,5 @@
 #include "accelerometer.h"
+#include "lis2dh12/lis2dh12.h"
 
 /* mutex + condvar */
 K_MUTEX_DEFINE(accelerometer_mutex);     // mutex used
@@ -12,7 +13,11 @@ static bool is_enabled = false;          // condition
 
 void config_accelerometer()
 {
-    // ...
+    lis2dh12_init();
+
+    lis2dh12_config();
+
+    lis2dh12_enable_interrupt();
 }
 
 void enable_accelerometer()
@@ -20,6 +25,7 @@ void enable_accelerometer()
     /* will be called from another thread (shell, main, ...) */
     is_enabled = true;
     k_condvar_signal(&accelerometer_condvar);
+    lis2dh12_enable_fifo();
 }
 
 void disable_accelerometer()
@@ -66,8 +72,13 @@ static void _accelerometer_loop()
 static void _accelerometer_read()
 {
     /* Service functionality */
-    printk("\tA: _accelerometer_read\n");
-    k_msleep(1000);
+    printk("A: _accelerometer_read\n");
+
+    int timout_res = lis2dh12_read_buffer(K_MSEC(500));
+    if (timout_res <= 0)
+    {
+        printk("A: lis2dh12_read_buffer timeout %d\n", timout_res);
+    }
 }
 /* thread creation ----------------------------------------------------------- */
 
