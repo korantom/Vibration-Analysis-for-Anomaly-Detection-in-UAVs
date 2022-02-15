@@ -3,10 +3,10 @@
 /* -------------------------------------------------------------------------- */
 
 // TODO: HANDLE_ERROR
-#define HANDLE_ERROR(x)     \
-	if (x)                  \
-	{                       \
-		printk("error \n"); \
+#define HANDLE_ERROR(x)         \
+	if (x)                      \
+	{                           \
+		printk("\nERROR \n\n"); \
 	}
 
 /* -------------------------------------------------------------------------- */
@@ -52,8 +52,8 @@ const reg_row_t reg_rows[] = {
 	{ADDR_INT1_DURATION, 0x03},
 	{ADDR_INT1_CFG, 0x00},
 
-	{ADDR_CTRL_REG5, 0x48}, // ENABLE FIFO, LATCH ENABLE
-	// {ADDR_CTRL_REG5, 0x40}, // ENABLE FIFO, LATCH DISABLE
+	{ADDR_CTRL_REG5, 0x48},		  // ENABLE FIFO, LATCH ENABLE
+	/* {ADDR_CTRL_REG5, 0x40}, */ // ENABLE FIFO, LATCH DISABLE
 };
 
 /* -------------------------------------------------------------------------- */
@@ -79,7 +79,9 @@ double f_raw_output_data[32][3];
 static void lis_interrupt_callback(const struct device *dev,
 								   struct gpio_callback *cb, gpio_port_pins_t pins)
 {
-	printk("lis_interrupt_callback\n");
+	printk("\nlis_interrupt_callback\n");
+	printk("\tgpio_sem: limit=%d, count=%d\n", gpio_sem.limit, gpio_sem.count);
+	printk("\tgpio_sem give\n\n");
 	k_sem_give(&gpio_sem);
 }
 
@@ -87,6 +89,8 @@ static void lis_interrupt_callback(const struct device *dev,
 
 int lis2dh12_init()
 {
+	printk("lis2dh12_init\n");
+
 	uint8_t chip_id;
 	int res;
 
@@ -103,7 +107,7 @@ int lis2dh12_init()
 
 	if (gpio_dev == NULL)
 	{
-		printk("Failed to get pointer device!");
+		printk("Failed to get pointer device!\n");
 		return -EINVAL;
 	}
 
@@ -114,15 +118,20 @@ int lis2dh12_init()
 	res = gpio_add_callback(gpio_dev, &gpio_cb);
 	if (res < 0)
 	{
-		printk("Failed to set gpio callback!");
+		printk("Failed to set gpio callback!\n");
 		return res;
 	}
 
+	printk("lis2dh12_init success\n\n");
 	return 0;
 }
 
+void _test_lis2dh12_config();
+
 void lis2dh12_config()
 {
+	printk("lis2dh12_config\n");
+
 	for (int i = 0; i < ARRAY_SIZE(reg_rows); i++)
 	{
 		HANDLE_ERROR(i2c_reg_write_byte(i2c_dev,
@@ -130,27 +139,33 @@ void lis2dh12_config()
 										reg_rows[i].addr,
 										reg_rows[i].val));
 	}
+
+	_test_lis2dh12_config();
 }
 
 int lis2dh12_enable_interrupt()
 {
+	printk("lis2dh12_enable_interrupt\n");
+
 	uint8_t temp;
 
 	HANDLE_ERROR(READ_REG(ADDR_INT1_SRC, &temp));
-	i2c_reg_write_byte(i2c_dev, LIS_ADDRESS, ADDR_FIFO_CTRL_REG, 0x0f);
+	i2c_reg_write_byte(i2c_dev, LIS_ADDRESS, ADDR_FIFO_CTRL_REG, 0x0f); // ?
 
-	int res = gpio_pin_interrupt_configure(gpio_dev, INT1_PIN_NUMBER, GPIO_INT_EDGE_RISING);
+	int res = gpio_pin_interrupt_configure(gpio_dev, INT1_PIN_NUMBER, GPIO_INT_EDGE_RISING); // ?
 	if (res != 0)
 	{
 		printk("Failed irq configure!");
 		return res;
 	}
 
-	i2c_reg_write_byte(i2c_dev, LIS_ADDRESS, ADDR_FIFO_CTRL_REG, 0x0f);
+	i2c_reg_write_byte(i2c_dev, LIS_ADDRESS, ADDR_FIFO_CTRL_REG, 0x0f); // ?
 
 	HANDLE_ERROR(READ_REG(ADDR_INT1_SRC, &temp));
 	HANDLE_ERROR(READ_REG(ADDR_FIFO_SRC_REG, &temp));
 
+	printk("lis2dh12_enable_interrupt sucess\n\n");
+	// _test_lis2dh12_config();
 	return 0;
 }
 
@@ -158,13 +173,15 @@ void lis2dh12_enable_fifo(void)
 {
 	i2c_reg_write_byte(i2c_dev, LIS_ADDRESS, ADDR_FIFO_CTRL_REG, 0x8f); // LATCH CLEAR
 	i2c_reg_write_byte(i2c_dev, LIS_ADDRESS, ADDR_CTRL_REG5, 0x48);		// ENABLE FIFO, LATCH ENABLE ??
+
+	printk("lis2dh12_enable_fifo\n\n");
+	// _test_lis2dh12_config();
 }
 
 int check_flags();
 
 int lis2dh12_read_buffer(k_timeout_t timeout)
 {
-	// uint8_t temp;
 	static uint8_t buf[6];
 
 	/* The explananttion of the calculaion below:
@@ -184,11 +201,19 @@ int lis2dh12_read_buffer(k_timeout_t timeout)
 	const double multiplier = 0.001197100830078125f;
 
 	// Take semaphore (interrupt occured)
+	printk("\tlis2dh12_read_buffer k_sem_take\n");
+	printk("\tgpio_sem: limit=%d, count=%d\n", gpio_sem.limit, gpio_sem.count);
+
 	int timeout_res = k_sem_take(&gpio_sem, timeout);
+
+	printk("\tlis2dh12_read_buffer sem taken\n");
+
 	if (timeout_res)
 	{
+		printk("\tlis2dh12_read_buffer timeout\n");
 		return timeout_res;
 	}
+	printk("\tlis2dh12_read_buffer check_flags\n");
 
 	// TODO: check flags (watermark, overrun, sample_count, ...)
 	int sample_count = check_flags();
@@ -205,6 +230,7 @@ int lis2dh12_read_buffer(k_timeout_t timeout)
 		f_raw_output_data[i][1] = *(int16_t *)&buf[2] * multiplier;
 		f_raw_output_data[i][2] = *(int16_t *)&buf[4] * multiplier;
 	}
+	printk("\tlis2dh12_read_buffer finished reading %d samples\n\n", sample_count);
 
 	return sample_count;
 }
@@ -238,7 +264,7 @@ int check_flags()
 	bool empty = temp & 0x20;
 	int sample_count = temp & 0x1f;
 
-	printk("sample_count = %d, empty %d, watermark: %d, overrun: %d\n",
+	printk("\tsample_count = %d, empty %d, watermark: %d, overrun: %d\n",
 		   sample_count, (int)empty, (int)watermark, (int)overrun);
 
 	/* check overrun -------------------------------------------------------- */
@@ -281,6 +307,6 @@ void _test_lis2dh12_config()
 									   reg_rows[i].addr, &val));
 		printk("reg: %02x; %02x ?= %02x\n",
 			   reg_rows[i].addr, (int)reg_rows[i].val, (int)val);
-		assert(reg_rows[i].val == val);
+		// assert(reg_rows[i].val == val);
 	}
 }
