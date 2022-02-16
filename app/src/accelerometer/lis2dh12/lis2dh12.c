@@ -127,6 +127,7 @@ int lis2dh12_init()
 }
 
 void _test_lis2dh12_config();
+int _check_flags();
 
 void lis2dh12_config()
 {
@@ -171,14 +172,18 @@ int lis2dh12_enable_interrupt()
 
 void lis2dh12_enable_fifo(void)
 {
+	printk("lis2dh12_enable_fifo\n");
+	_check_flags();
+
+	i2c_reg_write_byte(i2c_dev, LIS_ADDRESS, ADDR_FIFO_CTRL_REG, 0x0f); // clears fifo?
+
 	i2c_reg_write_byte(i2c_dev, LIS_ADDRESS, ADDR_FIFO_CTRL_REG, 0x8f); // LATCH CLEAR
 	i2c_reg_write_byte(i2c_dev, LIS_ADDRESS, ADDR_CTRL_REG5, 0x48);		// ENABLE FIFO, LATCH ENABLE ??
 
-	printk("lis2dh12_enable_fifo\n\n");
+	_check_flags();
+	printk("lis2dh12_enable_fifo end\n\n");
 	// _test_lis2dh12_config();
 }
-
-int check_flags();
 
 int lis2dh12_read_buffer(k_timeout_t timeout)
 {
@@ -216,7 +221,7 @@ int lis2dh12_read_buffer(k_timeout_t timeout)
 	printk("\tlis2dh12_read_buffer check_flags\n");
 
 	// TODO: check flags (watermark, overrun, sample_count, ...)
-	int sample_count = check_flags();
+	int sample_count = _check_flags();
 	if (sample_count <= 0)
 	{
 		return 0;
@@ -243,7 +248,7 @@ int lis2dh12_read_buffer(k_timeout_t timeout)
 // 	HANDLE_ERROR(READ_REG(ADDR_INT2_SRC, &temp)); // latch clear ??
 // }
 
-int check_flags()
+int _check_flags()
 {
 
 	uint8_t temp;
@@ -264,20 +269,20 @@ int check_flags()
 	bool empty = temp & 0x20;
 	int sample_count = temp & 0x1f;
 
-	printk("\tsample_count = %d, empty %d, watermark: %d, overrun: %d\n",
+	printk("\tsample_count=%d, empty: %d, watermark: %d, overrun: %d\n",
 		   sample_count, (int)empty, (int)watermark, (int)overrun);
 
 	/* check overrun -------------------------------------------------------- */
 	if (overrun)
 	{
-		printk("OVERRUN\n");
+		printk("\t\tOVERRUN\n");
 		return -1;
 	}
 	/* ---------------------------------------------------------------------- */
 
 	if (sample_count == 0)
 	{
-		printk("0 samples\n");
+		printk("\t\tEMPTY (0 samples)\n");
 		return 0;
 	}
 
