@@ -73,6 +73,13 @@ K_SEM_DEFINE(gpio_sem, 0, 1);
 double f_raw_output_data[32][3];
 
 /* -------------------------------------------------------------------------- */
+#include <sys/ring_buffer.h>
+
+// RING_BUF_ITEM_DECLARE_POW2(accel_ring_buf, 8); // unusable, can't align mem 6 and 4
+RING_BUF_ITEM_DECLARE_SIZE(accel_ring_buf, 4 * 32 * 2 * 3 * 4); // 3072 DEBUG
+// RING_BUF_ITEM_DECLARE_SIZE(accel_ring_buf, 10 * 32 * 2 * 3 * 4); // TODO: ...
+
+/* -------------------------------------------------------------------------- */
 
 // TODO: 2 consequitive interrupts? before taking semaphore => 1 reading will be lost
 /** @brief gpio callback function, will give semaphore for reading the fifo, on each interupt */
@@ -185,10 +192,10 @@ void lis2dh12_enable_fifo(void)
 	// _test_lis2dh12_config();
 }
 
+int write_ringbuffer(struct ring_buf *buf, int byte_count);
+
 int lis2dh12_read_buffer(k_timeout_t timeout)
 {
-	static uint8_t buf[6];
-
 	/* The explananttion of the calculaion below:
 	Full scale range = +-4G,  range = 8G
 	output data accuracy = 10-bit which is 1024 values (-512 to 511)
@@ -203,7 +210,8 @@ int lis2dh12_read_buffer(k_timeout_t timeout)
 	raw/64*(8G/1024) or raw*(8*9.80665/1024/64) m/s^2 = 0.001197100830078125f.
 	*/
 
-	const double multiplier = 0.001197100830078125f;
+	// TODO: move conversion to write service
+	// const double multiplier = 0.001197100830078125f;
 
 	// Take semaphore (interrupt occured)
 	printk("\tlis2dh12_read_buffer k_sem_take\n");
@@ -226,15 +234,18 @@ int lis2dh12_read_buffer(k_timeout_t timeout)
 	{
 		return 0;
 	}
+	int bytes_per_sample = 3 * 2;
+	int ret = write_ringbuffer(&accel_ring_buf, sample_count * bytes_per_sample);
 
-	for (int i = 0; i < sample_count; i++)
+	if (ret != sample_count * bytes_per_sample)
 	{
-		i2c_burst_read(i2c_dev, LIS_ADDRESS, 0x80 | ADDR_OUT_X_L, buf, sizeof(buf));
-		// raw * (8*9.80665/1024/64)
-		f_raw_output_data[i][0] = *(int16_t *)&buf[0] * multiplier;
-		f_raw_output_data[i][1] = *(int16_t *)&buf[2] * multiplier;
-		f_raw_output_data[i][2] = *(int16_t *)&buf[4] * multiplier;
+		// TODO: ring buffer full
+		return -1;
 	}
+
+	// TODO: signal ring buffer entry (semaphore/cond_var?)
+	// ...
+
 	printk("\tlis2dh12_read_buffer finished reading %d samples\n\n", sample_count);
 
 	return sample_count;
@@ -314,4 +325,52 @@ void _test_lis2dh12_config()
 			   reg_rows[i].addr, (int)reg_rows[i].val, (int)val);
 		// assert(reg_rows[i].val == val);
 	}
+}
+
+/* -------------------------------------------------------------------------- */
+
+/**
+ * @brief write to the ring buffer by calling i2c_burst_read(),  deal with no mem, mem overlap situations
+ *
+ * - claim memory from ring buffer
+ * 	- returned size == claim size all ok, write to ring buffer
+ * 	- returned size <  claim size, either not enough mem, or mem wrap
+ *
+ * - REQUIERES RING BUFFER TO BE ALIGNED 4 and 6 Bytes.
+ * 	- 4 <= 32-bit processor, ...
+ *	- 6 <= 3-axis, per axis value = 2 bytes
+ *
+ * @param byte_count - sample_count * bytes_per_sample (bytes_per_sample=3*2)
+ *
+ * @retval n - number of bytes read from the i2c ... (writen to ring buffer)
+ * @retval 0 - if no ring buffer memory space
+ */
+int write_ringbuffer(struct ring_buf *p_buf, int byte_count)
+{
+	uint8_t *p_data;
+
+	int ret = ring_buf_put_claim(p_buf, &p_data, byte_count);
+	printk("\t\tRING BUFFER claim, ret = %d, %d\n", byte_count, ret);
+
+	if (ret == byte_count) // normal
+	{
+		i2c_burst_read(i2c_dev, LIS_ADDRESS, 0x80 | ADDR_OUT_X_L, p_data, byte_count);
+		ring_buf_put_finish(p_buf, byte_count);
+		return byte_count;
+	}
+	else if (ret == 0) // 0 space
+	{
+		// ERROR?
+		// ring_buf_space_get(p_buf) // should be zero
+		printk("\t\tRING BUFFER FULL? ring_buf_space_get = %d\n", ring_buf_space_get(p_buf));
+		return 0;
+	}
+	else // insufficient space, or not enough continuous memory (mem wrap)
+	{
+		printk("\t\tRING BUFFER FULL or MEM WRAP? ring_buf_space_get = %d\n", ring_buf_space_get(p_buf));
+		i2c_burst_read(i2c_dev, LIS_ADDRESS, 0x80 | ADDR_OUT_X_L, p_data, ret);
+		ring_buf_put_finish(p_buf, ret);
+		return ret + write_ringbuffer(p_buf, byte_count - ret);
+	}
+	return 0;
 }
