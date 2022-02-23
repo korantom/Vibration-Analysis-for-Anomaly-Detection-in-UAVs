@@ -25,6 +25,7 @@ void enable_accelerometer()
     /* will be called from another thread (shell, main, ...) */
     // if (enabled) { return; } // ?
     is_enabled = true;
+    // TODO: empty ring buffer
     lis2dh12_enable_fifo(); // should be called before signaling?
     k_condvar_signal(&accelerometer_condvar);
     // lis2dh12_enable_fifo(); // or after?

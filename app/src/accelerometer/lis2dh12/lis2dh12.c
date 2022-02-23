@@ -355,7 +355,7 @@ int write_ringbuffer(struct ring_buf *p_buf, int byte_count)
 	if (ret == byte_count) // normal
 	{
 		i2c_burst_read(i2c_dev, LIS_ADDRESS, 0x80 | ADDR_OUT_X_L, p_data, byte_count);
-		ring_buf_put_finish(p_buf, byte_count);
+		ring_buf_put_finish(p_buf, byte_count); // TODO: check return value of == 0
 		return byte_count;
 	}
 	else if (ret == 0) // 0 space
@@ -369,7 +369,7 @@ int write_ringbuffer(struct ring_buf *p_buf, int byte_count)
 	{
 		printk("\t\tRING BUFFER FULL or MEM WRAP? ring_buf_space_get = %d\n", ring_buf_space_get(p_buf));
 		i2c_burst_read(i2c_dev, LIS_ADDRESS, 0x80 | ADDR_OUT_X_L, p_data, ret);
-		ring_buf_put_finish(p_buf, ret);
+		ring_buf_put_finish(p_buf, ret); // TODO: check return value of == 0
 		return ret + write_ringbuffer(p_buf, byte_count - ret);
 	}
 	return 0;
