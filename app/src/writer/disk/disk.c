@@ -203,3 +203,25 @@ int write(const char *path, const void *buf, size_t size)
     }
     return w_size;
 }
+
+/* -------------------------------------------------------------------------- */
+
+void test()
+{
+
+    test_disk_config();
+
+    mount_disk();
+
+    list_dir(DISK_MOUNT_PT);
+
+    test_write();
+
+    list_dir(DISK_MOUNT_PT);
+
+    test_write();
+
+    list_dir(DISK_MOUNT_PT);
+
+    unmount_disk();
+}
