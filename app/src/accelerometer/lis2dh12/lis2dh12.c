@@ -347,14 +347,14 @@ void _test_lis2dh12_config()
  */
 int write_ringbuffer(struct ring_buf *p_buf, int byte_count)
 {
-	uint8_t *p_data;
+	uint8_t *data;
 
-	int ret = ring_buf_put_claim(p_buf, &p_data, byte_count);
+	int ret = ring_buf_put_claim(p_buf, &data, byte_count);
 	printk("\t\tRING BUFFER claim, ret = %d, %d\n", byte_count, ret);
 
 	if (ret == byte_count) // normal
 	{
-		i2c_burst_read(i2c_dev, LIS_ADDRESS, 0x80 | ADDR_OUT_X_L, p_data, byte_count);
+		i2c_burst_read(i2c_dev, LIS_ADDRESS, 0x80 | ADDR_OUT_X_L, data, byte_count);
 		ring_buf_put_finish(p_buf, byte_count); // TODO: check return value of == 0
 		return byte_count;
 	}
@@ -368,7 +368,7 @@ int write_ringbuffer(struct ring_buf *p_buf, int byte_count)
 	else // insufficient space, or not enough continuous memory (mem wrap)
 	{
 		printk("\t\tRING BUFFER FULL or MEM WRAP? ring_buf_space_get = %d\n", ring_buf_space_get(p_buf));
-		i2c_burst_read(i2c_dev, LIS_ADDRESS, 0x80 | ADDR_OUT_X_L, p_data, ret);
+		i2c_burst_read(i2c_dev, LIS_ADDRESS, 0x80 | ADDR_OUT_X_L, data, ret);
 		ring_buf_put_finish(p_buf, ret); // TODO: check return value of == 0
 		return ret + write_ringbuffer(p_buf, byte_count - ret);
 	}
