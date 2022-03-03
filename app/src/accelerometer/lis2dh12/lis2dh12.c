@@ -79,6 +79,8 @@ double f_raw_output_data[32][3];
 RING_BUF_ITEM_DECLARE_SIZE(accel_ring_buf, 4 * 32 * 2 * 3 * 4); // 3072 DEBUG
 // RING_BUF_ITEM_DECLARE_SIZE(accel_ring_buf, 10 * 32 * 2 * 3 * 4); // TODO: ...
 
+K_SEM_DEFINE(ring_buf_sem, 0, 100); // TODO: count_limit
+
 /* -------------------------------------------------------------------------- */
 
 // TODO: 2 consequitive interrupts? before taking semaphore => 1 reading will be lost
@@ -356,6 +358,8 @@ int write_ringbuffer(struct ring_buf *p_buf, int byte_count)
 	{
 		i2c_burst_read(i2c_dev, LIS_ADDRESS, 0x80 | ADDR_OUT_X_L, data, byte_count);
 		ring_buf_put_finish(p_buf, byte_count); // TODO: check return value of == 0
+
+		k_sem_give(&ring_buf_sem);
 		return byte_count;
 	}
 	else if (ret == 0) // 0 space
