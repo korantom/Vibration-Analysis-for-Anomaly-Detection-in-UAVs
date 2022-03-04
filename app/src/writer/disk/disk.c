@@ -157,7 +157,7 @@ void test_write()
     char out_str[100];
     int written;
 
-    for (int i = 0; i < 32; i++)
+    for (int i = 0; i < 3; i++)
     {
         written = snprintf(out_str, sizeof(out_str) - 1, "%.6lf, %.6lf, %.6lf\r\n",
                            i * 1.0, i * 2.0, i * 3.0);

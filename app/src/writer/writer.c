@@ -1,4 +1,8 @@
 #include "writer.h"
+// #include "../accelerometer/lis2dh12/lis2dh12.h"
+// #include "../service_template/service_template.h"
+
+#include "disk/disk.h"
 
 /* mutex + condvar */
 K_MUTEX_DEFINE(writer_mutex);     // mutex used
@@ -36,6 +40,15 @@ static void _writer_loop()
 {
 
     printk("Writer Thread W: %p started\n", k_current_get());
+    mount_disk();
+
+    list_dir(DISK_MOUNT_PT);
+
+    test_write();
+
+    list_dir(DISK_MOUNT_PT);
+
+    // unmount_disk();
 
     while (1)
     {
@@ -58,7 +71,7 @@ static void _writer_loop()
         k_mutex_unlock(&writer_mutex);
         printk("W: unlocked mutex\n");
         printk("\n");
-
+        k_msleep(1000);
         k_yield();
     }
 }
@@ -66,8 +79,11 @@ static void _writer_loop()
 static void _writer()
 {
     /* Service functionality */
-    printk("\tW: Writer functionality\n");
-    k_msleep(1000);
+    printk("W: _writer\n");
+
+    test_write();
+    list_dir(DISK_MOUNT_PT);
+
 }
 /* thread creation ----------------------------------------------------------- */
 
@@ -82,7 +98,7 @@ static int _init_writer(const struct device *_)
     return 0;
 }
 
-SYS_INIT(_init_writer, APPLICATION, WRITER_SYS_INIT_PRIORITY);
+SYS_INIT(_init_writer, APPLICATION, 99);
 
 /* shell commands ------------------------------------------------------------ */
 // TODO: move to a different file?

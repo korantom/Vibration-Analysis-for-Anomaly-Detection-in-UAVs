@@ -5,7 +5,8 @@ find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 project(vibration_module)
 
 target_sources(app PRIVATE src/main.c
-                           src/accelerometer/lis2dh12/lis2dh12.c
-                           src/accelerometer/accelerometer.c
+                        #    src/accelerometer/lis2dh12/lis2dh12.c
+                        #    src/accelerometer/accelerometer.c
+                           src/service_template/service_template.c
                            src/writer/disk/disk.c
                            src/writer/writer.c)

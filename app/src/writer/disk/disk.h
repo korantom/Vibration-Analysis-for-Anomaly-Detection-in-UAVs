@@ -14,7 +14,7 @@
 /* -------------------------------------------------------------------------- */
 
 #define DISK_MOUNT_PT "/SD:"
-// #define MAKE_DISK_PATH(P) DISK_MOUNT_PT "/" P
+#define MAKE_DISK_PATH(P) DISK_MOUNT_PT "/" P
 // extern const char *disk_mount_pt;
 
 /* -------------------------------------------------------------------------- */
