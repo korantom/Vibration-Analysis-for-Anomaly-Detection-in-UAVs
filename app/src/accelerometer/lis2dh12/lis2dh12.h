@@ -82,6 +82,18 @@
 
 /* -------------------------------------------------------------------------- */
 
+/*
+Call once:
+- lis2dh12_init();
+- lis2dh12_config();
+- lis2dh12_enable_interrupt();
+
+Call each time ready to start reading data from the sensor:
+- lis2dh12_enable_fifo();
+*/
+
+/* -------------------------------------------------------------------------- */
+
 /**
  * @brief   start the LIS sensor
  * @details get device bindings (i2c, gpio), configure gpio: add interupt callback, ...
