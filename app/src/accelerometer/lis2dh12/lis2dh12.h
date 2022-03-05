@@ -1,8 +1,22 @@
-#ifndef __LIS2DH12_FIFO_H__
-#define __LIS2DH12_FIFO_H__
+#ifndef __LIS2DH12_H__
+#define __LIS2DH12_H__
 
+#include <device.h>
+#include <drivers/gpio.h>
+#include <drivers/i2c.h>
 #include <kernel.h>
+#include <logging/log.h>
+#include <nrfx.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/printk.h>
+#include <zephyr.h>
 
+#include "../../common.h"
+
+/* -------------------------------------------------------------------------- */
+
+/* Register Addresses */
 #define ADDR_WHO_AM_I 0x0F
 
 #define ADDR_CTRL_REG0 0x1E
@@ -62,12 +76,4 @@
 
 #define LIS_ADDRESS 0x19
 
-int lis2dh12_init();
-
-void lis2dh12_fifo_read_thread();
-
-void lis2dh12_config(void);
-
-float lis2dh12_convert_output(s32_t val);
-
-#endif // __LIS2DH12_FIFO_H__
+#endif // __LIS2DH12_H__
