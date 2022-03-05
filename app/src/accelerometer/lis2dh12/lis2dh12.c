@@ -16,33 +16,36 @@ typedef struct
 	uint8_t val;
 } reg_row_t;
 
-/* register configuration values to put the device in FIFO stream mode with
-   interrupt at FIFO full
-   The register configuration is likewise
-   CTRL_REG1 = 97, the ODR, sampling rate set to 1.344 Khz and enable all axis
-   CTRL_REG2 = 08, enabling high pass filter
-   CTRL_REG3 = 42, enable interrupt signal on on int pin 1
-   CTRL_REG4 = 90, BDU on, 4g, hr off
-   CTRL_REG4 = 9f, enabling fifo-stream mode
-*/
+/** register configuration values
+ * TODO: double check the order of writes, it matters
+ */
 const reg_row_t reg_rows[] = {
-	{ADDR_CTRL_REG1, 0x97},
-	{ADDR_CTRL_REG2, 0x08},
-	{ADDR_CTRL_REG3, 0x42}, // OVERRUN
+	// TODO: double check the order of reg writes (!the order is important!)
+	{ADDR_CTRL_REG5, 0x80}, // RESET
+
+	{ADDR_CTRL_REG1, 0x77}, // Sampling Rate 400 Hz
+	{ADDR_CTRL_REG2, 0x08}, // Enabling high pass filter?
+	{ADDR_CTRL_REG3, 0x06}, // INTERUPT ACTIVE 1, OVERRUN, WATERMARK
 	{ADDR_CTRL_REG4, 0x90}, // BDU on, 4g, hr off
-	{ADDR_CTRL_REG5, 0x40},
-	{ADDR_INT1_THS, 0x7F},
+
+	{ADDR_CTRL_REG6, 0x00}, // ?
+
+	{ADDR_INT1_THS, 0x00},
 	{ADDR_INT1_DURATION, 0x03},
-	{ADDR_CTRL_REG5, 0x48},
-	{ADDR_FIFO_CTRL_REG, 0x9f},
+	{ADDR_INT1_CFG, 0x00},
+
+	{ADDR_CTRL_REG5, 0x48},		  // ENABLE FIFO, LATCH ENABLE
+	/* {ADDR_CTRL_REG5, 0x40}, */ // ENABLE FIFO, LATCH DISABLE
 };
 
+/* -------------------------------------------------------------------------- */
+
 /* I2C device */
-static struct device *i2c_dev;
+static const struct device *i2c_dev;
 
 /* GPIO device and callback*/
-static struct device *gpio_dev;
+static const struct device *gpio_dev;
 static struct gpio_callback gpio_cb;
 
 /* Semaphore will be given at very interrupt callback */
-static struct k_sem gpio_sem;
+K_SEM_DEFINE(gpio_sem, 0, 1);
