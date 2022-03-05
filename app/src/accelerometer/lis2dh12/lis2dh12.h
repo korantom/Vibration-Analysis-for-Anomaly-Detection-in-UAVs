@@ -76,4 +76,52 @@
 
 #define LIS_ADDRESS 0x19
 
+/* -------------------------------------------------------------------------- */
+
+#define I2C0_LABEL DT_LABEL(DT_NODELABEL(i2c0))
+
+/* -------------------------------------------------------------------------- */
+
+/**
+ * @brief   start the LIS sensor
+ * @details get device bindings (i2c, gpio), configure gpio: add interupt callback, ...
+ * @retval   0 on success
+ * @retval < 0 on error
+ */
+int lis2dh12_init();
+
+/**
+ * @brief   configure the sensor ...
+ * @details configure the sensor by writing values to the sensors registers
+ * TODO: Add/Describe all config options
+ */
+void lis2dh12_config();
+
+/**
+ * @brief   ... enable/set gpio interrupt ...
+ * @details configure gpio: ..., configure i2c: write to register ...
+ * @note    has to be done after lis2dh12_config() (only after device bindings ...)
+ * @retval   0 on success
+ * @retval < 0 on error
+ */
+int lis2dh12_enable_interrupt();
+
+/**
+ * @brief   clears the sensors fifo, and enables it (sesor starts wrtitng values to the fifo)
+ * @details TODO: fifo clear? latch clear?
+ */
+void lis2dh12_enable_fifo(void);
+
+/**
+ * @brief   reads n sample from the sesors FIFO
+ * @details wait for interrupt to happen (sem_take), i.e. data ready in FIFO,
+ *          check FIFO flags (watermark, overflow),
+ *          read data from FIFO and write into a ringbufer (claim/finish => avoid unnecessary tmp copy)
+ * @note 1 sample = 3 axis values = 3*2 bytes
+ * @param timeout maximum time to wait for interrupt (sem_take)
+ * @retval > 0 sample count read into the ringbuffer
+ * @retval < 0 on error/timeout
+ */
+int lis2dh12_read_fifo_to_ringbuffer(k_timeout_t timeout);
+
 #endif // __LIS2DH12_H__
