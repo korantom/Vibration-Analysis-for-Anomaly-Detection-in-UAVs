@@ -1,4 +1,6 @@
 #include "writer.h"
+#include "disk/disk.h"
+#include "../accelerometer/lis2dh12/lis2dh12.h"
 
 /* mutex + condvar */
 K_MUTEX_DEFINE(writer_mutex);     // mutex
@@ -15,13 +17,25 @@ LOG_MODULE_REGISTER(writer_);
 void config_writer()
 {
     LOG_INF("config_writer()");
+
+    // disk_test_config();
+    disk_mount();
+    disk_list_dir(DISK_MOUNT_PT);
 }
 
 void enable_writer()
 {
     /* will be called from another thread (shell, main, ...) */
     LOG_INF("enable_writer()");
-    LOG_INF("condvar signal");
+
+    if (is_enabled)
+    {
+        return;
+    } // TODO:
+
+    disk_open_file(MAKE_DISK_PATH("A.csv"));
+
+    LOG_INF("writer_condvar signal");
     is_enabled = true;
     k_condvar_signal(&writer_condvar);
 }
@@ -31,6 +45,9 @@ void disable_writer()
     /* will be called from another thread (shell, main, ...) */
     LOG_INF("disable_writer()");
     is_enabled = false;
+
+    // TODO: wait for thread to finish writing
+    disk_close_file();
 }
 
 /* private functions --------------------------------------------------------- */
@@ -71,7 +88,45 @@ static void _writer_loop()
 static void _writer()
 {
     LOG_INF("_writer() ");
-    k_msleep(1000);
+
+    LOG_INF("ring_buf_sem take");
+    k_sem_take(&ring_buf_sem, K_FOREVER);
+    LOG_INF("ring_buf_sem taken");
+
+    ////////////////////////////////////////////////////////////////////////////
+    // TODO: make sure file is opened?
+    // TODO: write raw bytes convert later?
+
+    static char out_str[80];
+    int byte_count = 3 * 2 * 32; // TODO: figure out max batch size to write
+    uint8_t *data;
+
+    // CLAIM
+    int ringbuf_aloc_size = ring_buf_get_claim(&lis2dh12_ring_buf, &data, byte_count);
+    LOG_INF("ring_buf_get_claim: claimed, alocated = %d, %d, alocated%%6=%d", byte_count, ringbuf_aloc_size, ringbuf_aloc_size % 6);
+
+    const double multiplier = 0.001197100830078125f;
+    double x, y, z;
+    for (int i = 0; i < ringbuf_aloc_size; i += 6)
+    {
+        // raw * (8*9.80665/1024/64)
+        x = *(int16_t *)&data[i] * multiplier;
+        y = *(int16_t *)&data[i + 2] * multiplier;
+        z = *(int16_t *)&data[i + 4] * multiplier;
+        //
+
+        int written = snprintf(out_str, sizeof(out_str) - 1, "%.6lf, %.6lf, %.6lf\r\n", x, y, z);
+        disk_write_file(out_str, written);
+    }
+
+    // FINISH
+    int finish_ret = ring_buf_get_finish(&lis2dh12_ring_buf, ringbuf_aloc_size);
+    LOG_INF("RING BUFFER calimed, finished %d, %d bytes", ringbuf_aloc_size, finish_ret);
+
+    ////////////////////////////////////////////////////////////////////////////
+
+    disk_flush();
+    ////////////////////////////////////////////////////////////////////////////
 }
 /* thread creation ----------------------------------------------------------- */
 
