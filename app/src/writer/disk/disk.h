@@ -84,6 +84,9 @@ int disk_close_file(void);
  */
 int disk_write_file(const void *buf, size_t size);
 
+/** @brief flush */
+int disk_flush();
+
 /* -------------------------------------------------------------------------- */
 
 #endif // __DISK_H__

@@ -275,6 +275,10 @@ int disk_write_file(const void *buf, size_t size)
     return w_size;
 }
 
+int disk_flush()
+{
+    return fs_sync(&file);
+}
 /* -------------------------------------------------------------------------- */
 
 // void test()
