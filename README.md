@@ -56,3 +56,13 @@
 - take the gcc compilation command and:
   - add -E
   - remove error flags until it works (-MD -MT CMakeFiles/app.dir/src/main.c.obj -MF CMakeFiles/app.dir/src/main.c.obj.d -o CMakeFiles/app.dir/src/main.c.obj)
+
+# Testing
+- KCONFIG (`prj.conf`) options
+  - If dropping logs
+    - set larger log buffer?
+    - or switch from `CONFIG_LOG_MODE_DEFERRED` to `CONFIG_LOG_MODE_IMMEDIATE`
+  - limiting logs to severity ...
+    - `CONFIG_LOG_MAX_LEVEL=4` ~ all logs (ERR, WRN, INF, DBG)
+    - `CONFIG_LOG_MAX_LEVEL=3` ~ ERR, WRN, INF
+    - `CONFIG_LOG_MAX_LEVEL=2` ~ ERR, WRN
