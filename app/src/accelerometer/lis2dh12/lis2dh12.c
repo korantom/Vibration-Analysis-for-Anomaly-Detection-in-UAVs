@@ -183,6 +183,58 @@ void lis2dh12_enable_fifo(void)
 
 /* -------------------------------------------------------------------------- */
 
+int lis2dh12_read_fifo_dummy(k_timeout_t timeout)
+{
+	LOG_INF("lis2dh12_read_fifo_dummy()");
+
+	static double f_raw_output_data[32][3];
+	static uint8_t buf[6];
+
+	/* The explananttion of the calculaion below:
+	Full scale range = +-4G,  range = 8G
+	output data accuracy = 10-bit which is 1024 values (-512 to 511)
+
+	Raw data is signed, and left aligned, so to
+	preserve sign-bit, we interpret it as s16_t
+	and divide by 64, to right align it(discard
+	6 bits, '16-10', 2^6=64). Can't bit shift,
+	since it is a signed integer.
+
+	So value converted to m/s^2 will be
+	raw/64*(8G/1024) or raw*(8*9.80665/1024/64) m/s^2 = 0.001197100830078125f.
+	*/
+
+	const double multiplier = 0.001197100830078125f;
+
+	// Take semaphore (interrupt occured)
+	LOG_INF("gpio_sem take");
+	int timeout_res = k_sem_take(&gpio_sem, timeout);
+	if (timeout_res)
+	{
+		LOG_INF("gpio_sem timeout %d", timeout_res);
+		return timeout_res;
+	}
+	LOG_INF("gpio_sem taken");
+
+	int sample_count = _check_flags();
+
+	for (int i = 0; i < sample_count; i++)
+	{
+		i2c_burst_read(i2c_dev, LIS_ADDRESS, 0x80 | ADDR_OUT_X_L, buf, sizeof(buf));
+		// raw * (8*9.80665/1024/64)
+		f_raw_output_data[i][0] = *(int16_t *)&buf[0] * multiplier;
+		f_raw_output_data[i][1] = *(int16_t *)&buf[2] * multiplier;
+		f_raw_output_data[i][2] = *(int16_t *)&buf[4] * multiplier;
+		LOG_DBG("%f %f %f", f_raw_output_data[i][0], f_raw_output_data[i][1], f_raw_output_data[i][2]);
+	}
+
+	LOG_INF("read %d samples", sample_count);
+
+	return sample_count;
+}
+
+/* -------------------------------------------------------------------------- */
+
 // TODO: needed? when to call?
 // void latch_clear()
 // {

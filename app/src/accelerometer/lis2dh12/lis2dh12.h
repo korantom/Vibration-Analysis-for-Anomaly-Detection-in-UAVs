@@ -136,4 +136,7 @@ void lis2dh12_enable_fifo(void);
  */
 int lis2dh12_read_fifo_to_ringbuffer(k_timeout_t timeout);
 
+/** @brief same as lis2dh12_read_fifo_to_ringbuffer(), but values are just read into a static array instead of ringbuffer */
+int lis2dh12_read_fifo_dummy(k_timeout_t timeout);
+
 #endif // __LIS2DH12_H__
