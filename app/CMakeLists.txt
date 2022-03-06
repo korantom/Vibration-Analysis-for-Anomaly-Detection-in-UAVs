@@ -10,4 +10,5 @@ target_sources(app PRIVATE
                src/shell_debug/lis2dh12_shell_debug.c
 
                src/writer/disk/disk.c
+               src/writer/writer.c
               )
