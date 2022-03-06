@@ -18,7 +18,7 @@ void config_writer();
  * @brief   Enables writer
  * @details Sets the loop condition to true and signals the service thread (sem or condvar)
  */
-void enable_writer(void);
+void enable_writer(const char *file_name);
 
 /**
  * @brief   Disables writer

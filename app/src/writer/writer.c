@@ -8,7 +8,7 @@ K_CONDVAR_DEFINE(writer_condvar); // condvar
 static bool is_enabled = false;   // condition
 
 /* define all variables and structs */
-// ...
+static char path[100];
 
 LOG_MODULE_REGISTER(writer_);
 
@@ -23,7 +23,7 @@ void config_writer()
     disk_list_dir(DISK_MOUNT_PT);
 }
 
-void enable_writer()
+void enable_writer(const char *file_name)
 {
     /* will be called from another thread (shell, main, ...) */
     LOG_INF("enable_writer()");
@@ -33,7 +33,11 @@ void enable_writer()
         return;
     } // TODO:
 
-    disk_open_file(MAKE_DISK_PATH("A.csv"));
+    snprintf(path, sizeof(path), "%s/%s", DISK_MOUNT_PT, file_name);
+
+    LOG_DBG("path = %s", log_strdup(path));
+
+    disk_open_file(path);
 
     LOG_INF("writer_condvar signal");
     is_enabled = true;
@@ -149,10 +153,12 @@ SYS_INIT(_init_writer, APPLICATION, WRITER_SYS_INIT_PRIORITY);
 
 static int cmd_enable_writer(const struct shell *shell, size_t argc, char **argv)
 {
-    ARG_UNUSED(argc);
-    ARG_UNUSED(argv);
+    // for (size_t cnt = 0; cnt < argc; cnt++)
+    // {
+    //     shell_print(shell, "  argv[%d] = %s", cnt, argv[cnt]);
+    // }
 
-    enable_writer();
+    enable_writer(argv[1]);
     return 0;
 }
 
@@ -165,5 +171,5 @@ static int cmd_disable_writer(const struct shell *shell, size_t argc, char **arg
     return 0;
 }
 
-SHELL_CMD_REGISTER(enable_writer, NULL, "Enable writer (signal conditional variable)", cmd_enable_writer);
+SHELL_CMD_ARG_REGISTER(enable_writer, NULL, "Enable writer (signal conditional variable), input filename", cmd_enable_writer, 2, 0);
 SHELL_CMD_REGISTER(disable_writer, NULL, "Disable writer (wait on conditional variable)", cmd_disable_writer);
