@@ -1,4 +1,5 @@
 #include "accelerometer.h"
+#include "lis2dh12/lis2dh12.h"
 
 /* mutex + condvar */
 K_MUTEX_DEFINE(accelerometer_mutex);     // mutex
@@ -15,14 +16,24 @@ LOG_MODULE_REGISTER(accelerometer);
 void config_accelerometer()
 {
     LOG_INF("config_accelerometer()");
+
+    lis2dh12_init();
+    lis2dh12_config();
+    lis2dh12_enable_interrupt();
 }
 
 void enable_accelerometer()
 {
     /* will be called from another thread (shell, main, ...) */
     LOG_INF("enable_accelerometer()");
+
+    if (is_enabled) { return; } // TODO: avoid clearing FIFO?
+
     LOG_INF("condvar signal");
     is_enabled = true;
+
+    ring_buf_reset(&lis2dh12_ring_buf); // TODO: here or in lis2dh12_enable_fifo?
+    lis2dh12_enable_fifo();
     k_condvar_signal(&accelerometer_condvar);
 }
 
@@ -71,7 +82,11 @@ static void _accelerometer_loop()
 static void _accelerometer()
 {
     LOG_INF("_accelerometer() ");
-    k_msleep(1000);
+    int timout_res = lis2dh12_read_fifo_to_ringbuffer(K_MSEC(500));
+    if (timout_res <= 0)
+    {
+        // TODO: disable?
+    }
 }
 /* thread creation ----------------------------------------------------------- */
 
