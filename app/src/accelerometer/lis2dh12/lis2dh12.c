@@ -7,7 +7,6 @@ LOG_MODULE_REGISTER(lis2dh12);
 #define HANDLE_ERROR(msg, e)       \
 	if (e)                         \
 	{                              \
-		printk("\nERROR \n\n");    \
 		LOG_ERR("%s: %d", msg, e); \
 	}
 
