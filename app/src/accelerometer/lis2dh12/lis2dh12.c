@@ -76,6 +76,12 @@ static void lis_interrupt_callback(const struct device *dev,
 
 /* -------------------------------------------------------------------------- */
 
+// RING_BUF_ITEM_DECLARE_POW2(lis2dh12_ring_buf, 8);			   // unusable, can't align mem 6 and 4
+RING_BUF_ITEM_DECLARE_SIZE(lis2dh12_ring_buf, 4 * 32 * 2 * 3 * 4); // TODO: size
+K_SEM_DEFINE(ring_buf_sem, 0, 100);								   // TODO: count_limit
+
+/* -------------------------------------------------------------------------- */
+
 /** @brief compare values in registers with config values that were written to the registers */
 void _test_lis2dh12_config();
 
@@ -179,6 +185,109 @@ void lis2dh12_enable_fifo(void)
 	i2c_reg_write_byte(i2c_dev, LIS_ADDRESS, ADDR_CTRL_REG5, 0x48);		// ENABLE FIFO, LATCH ENABLE ??
 
 	_check_flags();
+}
+
+/* -------------------------------------------------------------------------- */
+
+/**
+ * @brief write data from i2c_burst_read directly into the ring buffer (without copying)
+ *
+ * @details claim memory from ring buffer
+ * - returned size == claim size => all ok, write to ring buffer
+ * - returned size <  claim size => either not enough mem, or mem wrap
+ *
+ * @note: REQUIERES RING BUFFER TO BE 4 and 6 Bytes ALIGNED
+ * 	- 4 <= 32-bit processor, ...
+ *	- 6 <= 3-axis, per axis value = 2 bytes
+ *
+ * @param p_ring_buf - pointer to ring buffer
+ * @param byte_count - total number of bytes to read from FIFO to ring buffer (sample_count * bytes_per_sample)
+ *
+ * @retval > 0 - number of bytes read and written succesfuly from from FIFO into ring buffer
+ * @retval < 0 - error (insufficient ring buffer memory, i2c_burst_read error, ...)
+ */
+int i2c_ringbuffer_burst_read(struct ring_buf *p_ring_buf, int byte_count)
+{
+	LOG_INF("i2c_ringbuffer_burst_read()");
+
+	uint8_t *data;
+	int ringbuf_aloc_size;
+	// int ringbuf_finish_ret;
+
+	ringbuf_aloc_size = ring_buf_put_claim(p_ring_buf, &data, byte_count);
+	LOG_INF("ring_buf_put_claim: claimed=%d, alocated=%d, space=%d", byte_count, ringbuf_aloc_size, ring_buf_space_get(p_ring_buf));
+
+	if (ringbuf_aloc_size == 0)
+	{
+		LOG_ERR("RING BUFFER FULL");
+		ring_buf_put_finish(p_ring_buf, 0);
+		return 0;
+	}
+	else if (ringbuf_aloc_size < byte_count)
+	{
+		LOG_INF("RING BUFFER INSUFFICIENT (full or mem wrap)");
+
+		HANDLE_ERROR("i2c_burst_read error",
+					 i2c_burst_read(i2c_dev, LIS_ADDRESS, 0x80 | ADDR_OUT_X_L, data, ringbuf_aloc_size));
+		ring_buf_put_finish(p_ring_buf, ringbuf_aloc_size);
+
+		LOG_INF("RING BUFFER calim/finish %d bytes", ringbuf_aloc_size);
+
+		return ringbuf_aloc_size + i2c_ringbuffer_burst_read(p_ring_buf, byte_count - ringbuf_aloc_size);
+	}
+	else // ringbuf_aloc_size == byte_count
+	{
+		HANDLE_ERROR("i2c_burst_read error",
+					 i2c_burst_read(i2c_dev, LIS_ADDRESS, 0x80 | ADDR_OUT_X_L, data, ringbuf_aloc_size));
+		ring_buf_put_finish(p_ring_buf, ringbuf_aloc_size);
+
+		LOG_INF("RING BUFFER calim/finish %d bytes", ringbuf_aloc_size);
+
+		return ringbuf_aloc_size;
+	}
+}
+
+int lis2dh12_read_fifo_to_ringbuffer(k_timeout_t timeout)
+{
+	LOG_INF("lis2dh12_read_fifo_to_ringbuffer()");
+
+	// Take semaphore (interrupt occured)
+	LOG_INF("gpio_sem take: limit=%d, count=%d\n", gpio_sem.limit, gpio_sem.count);
+	int timeout_res = k_sem_take(&gpio_sem, timeout);
+	if (timeout_res)
+	{
+		LOG_WRN("gpio_sem timeout %d", timeout_res);
+		return timeout_res;
+	}
+	LOG_INF("gpio_sem taken");
+
+	int sample_count = _check_flags();
+
+	if (sample_count <= 0)
+	{
+		LOG_ERR("FIFO insufficient/overwritten samples %d", sample_count);
+		return sample_count;
+	}
+
+	////////////////////////////////////////////////////////////////////////////
+
+	int bytes_per_sample = 3 * 2;
+	int ret = i2c_ringbuffer_burst_read(&lis2dh12_ring_buf, sample_count * bytes_per_sample);
+
+	if (ret < sample_count * bytes_per_sample)
+	{
+		LOG_ERR("RING BUFEER FULL");
+		return -ENOBUFS;
+	}
+
+	LOG_INF("ring_buf_sem give: limit=%d, count=%d\n", ring_buf_sem.limit, ring_buf_sem.count);
+	k_sem_give(&ring_buf_sem);
+
+	////////////////////////////////////////////////////////////////////////////
+
+	LOG_INF("read %d samples from FIFO into ringbuffer", sample_count);
+
+	return sample_count;
 }
 
 /* -------------------------------------------------------------------------- */

@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/printk.h>
+#include <sys/ring_buffer.h>
 #include <zephyr.h>
 
 #include "../../common.h"
@@ -82,6 +83,13 @@
 
 /* -------------------------------------------------------------------------- */
 
+/* ringbuffer containing sensor data */
+extern struct ring_buf lis2dh12_ring_buf; // TODO: race conditions? simultaneousl read write?
+/* ringbuffer semaphore, signaled when new data added to lis2dh12_ring_buf */
+extern struct k_sem ring_buf_sem;
+
+/* -------------------------------------------------------------------------- */
+
 /*
 Call once:
 - lis2dh12_init();
@@ -132,7 +140,7 @@ void lis2dh12_enable_fifo(void);
  * @note 1 sample = 3 axis values = 3*2 bytes
  * @param timeout maximum time to wait for interrupt (sem_take)
  * @retval > 0 sample count read into the ringbuffer
- * @retval < 0 on error/timeout
+ * @retval < 0 on error (ringbuffer full) / timeout
  */
 int lis2dh12_read_fifo_to_ringbuffer(k_timeout_t timeout);
 
