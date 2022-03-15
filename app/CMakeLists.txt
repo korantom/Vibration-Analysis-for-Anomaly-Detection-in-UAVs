@@ -11,4 +11,6 @@ target_sources(app PRIVATE
 
                src/writer/disk/disk.c
                src/writer/writer.c
+
+               src/esc_pwm/esc_pwm.c
               )
