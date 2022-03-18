@@ -66,3 +66,9 @@
     - `CONFIG_LOG_MAX_LEVEL=4` ~ all logs (ERR, WRN, INF, DBG)
     - `CONFIG_LOG_MAX_LEVEL=3` ~ ERR, WRN, INF
     - `CONFIG_LOG_MAX_LEVEL=2` ~ ERR, WRN
+
+
+# HW used
+- https://hobbyking.com/en_us/hobbyking-20a-blueseries-brushless-speed-controller.html
+  - https://cdn-global-hk.hobbyking.com/media/file/214300043X9340X50.pdf
+    - TODO: download and add to repo
