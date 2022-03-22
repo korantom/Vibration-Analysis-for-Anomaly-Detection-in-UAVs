@@ -168,6 +168,7 @@ extern struct ring_buf lis2dh12_ring_buf; // TODO: race conditions? simultaneous
 /* ringbuffer semaphore, signaled when new data added to lis2dh12_ring_buf */
 extern struct k_sem ring_buf_sem;
 
+extern double dummy_f_raw_output_data[32][3];
 /* -------------------------------------------------------------------------- */
 
 /*
@@ -271,5 +272,20 @@ int lis2dh12_read_fifo_to_ringbuffer(k_timeout_t timeout);
 
 /** @brief same as lis2dh12_read_fifo_to_ringbuffer(), but values are just read into a static array instead of ringbuffer */
 int lis2dh12_read_fifo_dummy(k_timeout_t timeout);
+
+/* -------------------------------------------------------------------------- */
+
+/**
+ * @brief check the FIFO flags for: Overrun, Watermark, Empty and unread Sample count
+ * @retval > 0 on success, samples in FIFO
+ * @retval < 0 on error, FIFO overun (full, values were overwrited)
+ */
+int lis2dh12_read_fifo_flags();
+
+void lis2dh12_write_default_config();
+
+void lis2dh12_read_config();
+
+void lis2dh12_check_config();
 
 #endif // __LIS2DH12_H__

@@ -85,21 +85,6 @@ K_SEM_DEFINE(ring_buf_sem, 0, 100);								   // TODO: count_limit
 
 /* -------------------------------------------------------------------------- */
 
-/**
- * @brief check the FIFO flags for: Overrun, Watermark, Empty and unread Sample count
- * @retval > 0 on success, samples in FIFO
- * @retval < 0 on error, FIFO overun (full, values were overwrited)
- */
-int _check_flags();
-
-void lis2dh12_write_default_config();
-
-void lis2dh12_read_config();
-
-void lis2dh12_check_config();
-
-/* -------------------------------------------------------------------------- */
-
 int lis2dh12_init()
 {
 	LOG_INF("lis2dh12_init()");
@@ -260,7 +245,7 @@ int lis2dh12_read_fifo_to_ringbuffer(k_timeout_t timeout)
 	}
 	LOG_INF("gpio_sem taken");
 
-	int sample_count = _check_flags();
+	int sample_count = lis2dh12_read_fifo_flags();
 
 	if (sample_count < 0)
 	{
@@ -291,11 +276,11 @@ int lis2dh12_read_fifo_to_ringbuffer(k_timeout_t timeout)
 
 /* -------------------------------------------------------------------------- */
 
+double dummy_f_raw_output_data[32][3];
 int lis2dh12_read_fifo_dummy(k_timeout_t timeout)
 {
 	LOG_INF("lis2dh12_read_fifo_dummy()");
 
-	static double f_raw_output_data[32][3];
 	static uint8_t buf[6];
 
 	/* The explananttion of the calculaion below:
@@ -324,16 +309,15 @@ int lis2dh12_read_fifo_dummy(k_timeout_t timeout)
 	}
 	LOG_INF("gpio_sem taken");
 
-	int sample_count = _check_flags();
+	int sample_count = lis2dh12_read_fifo_flags();
 
 	for (int i = 0; i < sample_count; i++)
 	{
 		i2c_burst_read(i2c_dev, LIS_ADDRESS, 0x80 | ADDR_OUT_X_L, buf, sizeof(buf));
 		// raw * (8*9.80665/1024/64)
-		f_raw_output_data[i][0] = *(int16_t *)&buf[0] * multiplier;
-		f_raw_output_data[i][1] = *(int16_t *)&buf[2] * multiplier;
-		f_raw_output_data[i][2] = *(int16_t *)&buf[4] * multiplier;
-		LOG_DBG("%f %f %f", f_raw_output_data[i][0], f_raw_output_data[i][1], f_raw_output_data[i][2]);
+		dummy_f_raw_output_data[i][0] = *(int16_t *)&buf[0] * multiplier;
+		dummy_f_raw_output_data[i][1] = *(int16_t *)&buf[2] * multiplier;
+		dummy_f_raw_output_data[i][2] = *(int16_t *)&buf[4] * multiplier;
 	}
 
 	LOG_INF("read %d samples", sample_count);
@@ -343,9 +327,9 @@ int lis2dh12_read_fifo_dummy(k_timeout_t timeout)
 
 /* -------------------------------------------------------------------------- */
 
-int _check_flags()
+int lis2dh12_read_fifo_flags()
 {
-	LOG_INF("_check_flags()");
+	LOG_INF("lis2dh12_read_fifo_flags()");
 
 	uint8_t tmp;
 
