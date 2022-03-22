@@ -24,31 +24,34 @@ LOG_MODULE_REGISTER(lis2dh12);
 /* struct for reg address and values*/
 typedef struct
 {
-	uint8_t addr;
-	uint8_t val;
+	const uint8_t addr;
+	const uint8_t val;
+	const char *name;
 } reg_row_t;
 
-/** register configuration values
- * TODO: double check the order of writes, it matters
- */
+#define REG_ROW_T_ENTRY(ADDR, VAL) \
+	{                              \
+		ADDR, VAL, #ADDR           \
+	}
+
+/* register configuration values */
 const reg_row_t reg_rows[] = {
-	// TODO: double check the order of reg writes (!the order is important!)
-	{ADDR_CTRL_REG5, 0x80}, // RESET
+	REG_ROW_T_ENTRY(ADDR_CTRL_REG1, CTRL_REG1_LOW_POWER_MODE_DISABLE | CTRL_REG1_XYZ_AXES_ENABLE | CTRL_REG1_OUTPUT_DATA_RATE_400_HZ),
+	REG_ROW_T_ENTRY(ADDR_CTRL_REG2, CTRL_REG2_FILTERED_DATA_SELECTION_BYPASS),
+	REG_ROW_T_ENTRY(ADDR_CTRL_REG3, CTRL_REG3_FIFO_WATERMARK_INTERRUPT_ENABLE),
+	REG_ROW_T_ENTRY(ADDR_CTRL_REG4, CTRL_REG4_BLOCK_DATA_UPDATE_ENABLE | CTRL_REG4_SCALE_4G),
+	REG_ROW_T_ENTRY(ADDR_CTRL_REG5, CTRL_REG5_FIFO_ENABLE | CTRL_REG5_LATCH_INTERRUPT_1_DISABLE),
+	REG_ROW_T_ENTRY(ADDR_CTRL_REG6, 0x00),
 
-	{ADDR_CTRL_REG1, 0x77}, // Sampling Rate 400 Hz
-	{ADDR_CTRL_REG2, 0x08}, // Enabling high pass filter?
-	{ADDR_CTRL_REG3, 0x06}, // INTERUPT ACTIVE 1, OVERRUN, WATERMARK
-	{ADDR_CTRL_REG4, 0x90}, // BDU on, 4g, hr off
+	REG_ROW_T_ENTRY(ADDR_FIFO_CTRL_REG, FIFO_CTRL_REG_SET_FIFO_MODE_BYPASS | FIFO_CTRL_REG_SET_WATERMARK_THRESHOLD_16),
 
-	{ADDR_CTRL_REG6, 0x00}, // ?
-
-	{ADDR_INT1_THS, 0x00},
-	{ADDR_INT1_DURATION, 0x03},
-	{ADDR_INT1_CFG, 0x00},
-
-	{ADDR_CTRL_REG5, 0x48},		  // ENABLE FIFO, LATCH ENABLE
-	/* {ADDR_CTRL_REG5, 0x40}, */ // ENABLE FIFO, LATCH DISABLE
+	REG_ROW_T_ENTRY(ADDR_INT1_CFG, 0x00),
+	REG_ROW_T_ENTRY(ADDR_INT1_THS, 0x00),
+	REG_ROW_T_ENTRY(ADDR_INT1_DURATION, 0x00),
 };
+
+/* tmp string for logs */
+static char bin[32] = {0};
 
 /* -------------------------------------------------------------------------- */
 
@@ -82,15 +85,18 @@ K_SEM_DEFINE(ring_buf_sem, 0, 100);								   // TODO: count_limit
 
 /* -------------------------------------------------------------------------- */
 
-/** @brief compare values in registers with config values that were written to the registers */
-void _test_lis2dh12_config();
-
 /**
- * @brief check the FIFO flags for: Overrun, Watermark and Samples read count
+ * @brief check the FIFO flags for: Overrun, Watermark, Empty and unread Sample count
  * @retval > 0 on success, samples in FIFO
  * @retval < 0 on error, FIFO overun (full, values were overwrited)
  */
 int _check_flags();
+
+void lis2dh12_write_default_config();
+
+void lis2dh12_read_config();
+
+void lis2dh12_check_config();
 
 /* -------------------------------------------------------------------------- */
 
@@ -135,25 +141,24 @@ void lis2dh12_config()
 {
 	LOG_INF("lis2dh12_config()");
 
+	lis2dh12_write_default_config();
+
 	for (int i = 0; i < ARRAY_SIZE(reg_rows); i++)
 	{
-		HANDLE_ERROR("i2c_reg_write_byte() err", i2c_reg_write_byte(i2c_dev,
-																	LIS_ADDRESS,
-																	reg_rows[i].addr,
-																	reg_rows[i].val));
+		HANDLE_ERROR("WRITE_REG err", WRITE_REG(reg_rows[i].addr, reg_rows[i].val));
 	}
 
-	_test_lis2dh12_config();
+	lis2dh12_read_config();
 }
 
 int lis2dh12_enable_interrupt()
 {
 	LOG_INF("lis2dh12_enable_interrupt()");
 
-	uint8_t temp;
+	uint8_t tmp;
 
-	HANDLE_ERROR("READ_REG(ADDR_INT1_SRC) err", READ_REG(ADDR_INT1_SRC, &temp));
-	i2c_reg_write_byte(i2c_dev, LIS_ADDRESS, ADDR_FIFO_CTRL_REG, 0x0f); // ?
+	// TODO: Latch interrupt request on INT1_SRC clear (latch clear by reading from INT1_SRC)?
+	HANDLE_ERROR("READ_REG(ADDR_INT1_SRC) err", READ_REG(ADDR_INT1_SRC, &tmp));
 
 	int res = gpio_pin_interrupt_configure(gpio_dev, INT1_PIN_NUMBER, GPIO_INT_EDGE_RISING); // ?
 	if (res != 0)
@@ -162,12 +167,9 @@ int lis2dh12_enable_interrupt()
 		return res;
 	}
 
-	i2c_reg_write_byte(i2c_dev, LIS_ADDRESS, ADDR_FIFO_CTRL_REG, 0x0f); // ?
+	// TODO: Latch interrupt request on INT1_SRC clear (latch clear by reading from INT1_SRC)?
+	HANDLE_ERROR("READ_REG(ADDR_INT1_SRC) err", READ_REG(ADDR_INT1_SRC, &tmp));
 
-	HANDLE_ERROR("READ_REG(ADDR_INT1_SRC) err", READ_REG(ADDR_INT1_SRC, &temp));
-	HANDLE_ERROR("READ_REG(ADDR_FIFO_SRC_REG) err", READ_REG(ADDR_FIFO_SRC_REG, &temp));
-
-	// _test_lis2dh12_config();
 	return 0;
 }
 
@@ -175,16 +177,13 @@ void lis2dh12_enable_fifo(void)
 {
 	LOG_INF("lis2dh12_enable_fifo()");
 
-	_check_flags();
+	// Stop and Clear FIFO
+	WRITE_REG(ADDR_FIFO_CTRL_REG, FIFO_CTRL_REG_SET_FIFO_MODE_BYPASS | FIFO_CTRL_REG_SET_WATERMARK_THRESHOLD_16);
 
-	LOG_INF("FIFO clear?, LATCH clear?, ENABLE FIFO&LATCH?");
+	// TODO: Latch Clear?
 
-	i2c_reg_write_byte(i2c_dev, LIS_ADDRESS, ADDR_FIFO_CTRL_REG, 0x0f); // CLEAR FIFO?
-
-	i2c_reg_write_byte(i2c_dev, LIS_ADDRESS, ADDR_FIFO_CTRL_REG, 0x8f); // LATCH CLEAR?
-	i2c_reg_write_byte(i2c_dev, LIS_ADDRESS, ADDR_CTRL_REG5, 0x48);		// ENABLE FIFO, LATCH ENABLE ??
-
-	_check_flags();
+	// Start FIFO again (~ switch from Bypass mode to FIFO mode)
+	WRITE_REG(ADDR_FIFO_CTRL_REG, FIFO_CTRL_REG_SET_FIFO_MODE_FIFO | FIFO_CTRL_REG_SET_WATERMARK_THRESHOLD_16);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -257,15 +256,15 @@ int lis2dh12_read_fifo_to_ringbuffer(k_timeout_t timeout)
 	if (timeout_res)
 	{
 		LOG_WRN("gpio_sem timeout %d", timeout_res);
-		return timeout_res;
+		return -1;
 	}
 	LOG_INF("gpio_sem taken");
 
 	int sample_count = _check_flags();
 
-	if (sample_count <= 0)
+	if (sample_count < 0)
 	{
-		LOG_ERR("FIFO insufficient/overwritten samples %d", sample_count);
+		LOG_ERR("FIFO OVERRUN");
 		return sample_count;
 	}
 
@@ -321,7 +320,7 @@ int lis2dh12_read_fifo_dummy(k_timeout_t timeout)
 	if (timeout_res)
 	{
 		LOG_INF("gpio_sem timeout %d", timeout_res);
-		return timeout_res;
+		return -1;
 	}
 	LOG_INF("gpio_sem taken");
 
@@ -344,67 +343,85 @@ int lis2dh12_read_fifo_dummy(k_timeout_t timeout)
 
 /* -------------------------------------------------------------------------- */
 
-// TODO: needed? when to call?
-// void latch_clear()
-// {
-// 	uint8_t temp;
-// 	HANDLE_ERROR(READ_REG(ADDR_INT1_SRC, &temp)); // latch clear ??
-// 	HANDLE_ERROR(READ_REG(ADDR_INT2_SRC, &temp)); // latch clear ??
-// }
-
-/* -------------------------------------------------------------------------- */
-
-void _test_lis2dh12_config()
-{
-	LOG_INF("_test_lis2dh12_config()");
-
-	uint8_t val;
-	for (int i = 0; i < ARRAY_SIZE(reg_rows); i++)
-	{
-		HANDLE_ERROR("i2c_reg_read_byte() err", i2c_reg_read_byte(i2c_dev,
-																  LIS_ADDRESS,
-																  reg_rows[i].addr,
-																  &val));
-
-		// assert(reg_rows[i].val == val);
-
-		if (reg_rows[i].val == val)
-			LOG_INF("sensor reg[%02x]: %02x == %02x reg_rows_config", reg_rows[i].addr, (int)val, (int)reg_rows[i].val);
-		else
-			LOG_WRN("sensor reg[%02x]: %02x != %02x reg_rows_config", reg_rows[i].addr, (int)val, (int)reg_rows[i].val);
-	}
-}
-
 int _check_flags()
 {
 	LOG_INF("_check_flags()");
 
-	uint8_t temp;
+	uint8_t tmp;
 
-	/* read FIFO flags, (read state of fifo (depending on setting, watermark/overrun/samplecount)) */
-	HANDLE_ERROR("READ_REG(ADDR_FIFO_SRC_REG) err", READ_REG(ADDR_FIFO_SRC_REG, &temp));
+	HANDLE_ERROR("READ_REG(ADDR_FIFO_SRC_REG) err", READ_REG(ADDR_FIFO_SRC_REG, &tmp));
 
 	/* mask flags */
-	// int ? = temp & 0xC0 // TODO: ?
-	bool watermark = temp & 0x80;
-	bool overrun = temp & 0x40;
-	bool empty = temp & 0x20;
-	int sample_count = temp & 0x1f;
+	bool watermark = tmp & (1 << 7);
+	bool overrun = tmp & (1 << 6);
+	bool empty = tmp & (1 << 5);
+	uint8_t sample_count = tmp & 0x1f;
 
-	LOG_INF("flags: sample_count=%d, empty: %d, watermark: %d, overrun: %d",
-			sample_count, (int)empty, (int)watermark, (int)overrun);
+	LOG_INF("ADDR_FIFO_SRC_REG: watermark: %d, overrun: %d, empty: %d, sample_count=%d\n",
+			watermark, overrun, empty, sample_count);
 
-	/*  --------------------------------------------------------------------- */
 	if (overrun)
 	{
 		LOG_ERR("FIFO OVERRUN");
 		return -1;
 	}
 
-	if (sample_count == 0)
-	{
-		LOG_WRN("FIFO EMPTY (0 samples)");
-	}
-
 	return sample_count;
+}
+
+void lis2dh12_write_default_config()
+{
+	LOG_INF("lis2dh12_write_default_config()");
+
+	WRITE_REG(ADDR_CTRL_REG5, CTRL_REG5_REBOOT_REGISTERS); // TODO: ?
+
+	for (int i = 0; i < ARRAY_SIZE(reg_rows); i++)
+	{
+		WRITE_REG(reg_rows[i].addr, 0x00);
+	}
+}
+
+void itoa(uint8_t val, char *buf, uint8_t base)
+{
+
+	int i = sizeof(val) * 8;
+	buf[i--] = '\0';
+
+	for (; i + 1; --i, val /= base)
+		buf[i] = "0123456789abcdef"[val % base];
+}
+
+void lis2dh12_read_config()
+{
+	LOG_INF("lis2dh12_read_config()");
+
+	uint8_t val;
+
+	for (int i = 0; i < ARRAY_SIZE(reg_rows); i++)
+	{
+		READ_REG(reg_rows[i].addr, &val);
+		itoa(val, bin, 2);
+
+		LOG_INF("%-24s[%02x] = 0x%02X = 0b%s; (my_config_val = 0x%02X)l\n", reg_rows[i].name, reg_rows[i].addr, (int)val, log_strdup(bin), reg_rows[i].val);
+		// printk("%-24s[%02x] = 0x%02X = 0b%s; (my_config_val = 0x%02X)l\n", reg_rows[i].name, reg_rows[i].addr, (int)val, bin, reg_rows[i].val);
+	}
+}
+
+/** @brief compare values in registers with config values that were written to the registers */
+void lis2dh12_check_config()
+{
+	LOG_INF("lis2dh12_check_config()");
+
+	uint8_t val;
+
+	for (int i = 0; i < ARRAY_SIZE(reg_rows); i++)
+	{
+		READ_REG(reg_rows[i].addr, &val);
+		itoa(val, bin, 2);
+
+		if (reg_rows[i].val == val)
+			LOG_INF("%-24s[%02x] = 0x%02X = 0b%s == 0x%02X (config)l\n", reg_rows[i].name, reg_rows[i].addr, (int)val, log_strdup(bin), reg_rows[i].val);
+		else
+			LOG_WRN("%-24s[%02x] = 0x%02X = 0b%s != 0x%02X (config)l\n", reg_rows[i].name, reg_rows[i].addr, (int)val, log_strdup(bin), reg_rows[i].val);
+	}
 }
