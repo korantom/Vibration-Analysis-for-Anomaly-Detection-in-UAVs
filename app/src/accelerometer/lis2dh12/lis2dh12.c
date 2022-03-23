@@ -191,11 +191,19 @@ void lis2dh12_enable_fifo(void)
  * @param byte_count - total number of bytes to read from FIFO to ring buffer (sample_count * bytes_per_sample)
  *
  * @retval > 0 - number of bytes read and written succesfuly from from FIFO into ring buffer
+ * @retval = 0 - requested 0 bytes to write
  * @retval < 0 - error (insufficient ring buffer memory, i2c_burst_read error, ...)
  */
 int i2c_ringbuffer_burst_read(struct ring_buf *p_ring_buf, int byte_count)
 {
 	LOG_INF("i2c_ringbuffer_burst_read()");
+
+	// TODO: shouldn't occur
+	if (byte_count == 0)
+	{
+		LOG_ERR("RING i2c_ringbuffer_burst_read(0 Bytes) to write requested");
+		return 0;
+	}
 
 	uint8_t *data;
 	int ringbuf_aloc_size;
@@ -208,7 +216,7 @@ int i2c_ringbuffer_burst_read(struct ring_buf *p_ring_buf, int byte_count)
 	{
 		LOG_ERR("RING BUFFER FULL");
 		ring_buf_put_finish(p_ring_buf, 0);
-		return 0;
+		return -ENOBUFS;
 	}
 	else if (ringbuf_aloc_size < byte_count)
 	{
@@ -244,7 +252,7 @@ int lis2dh12_read_fifo_to_ringbuffer(k_timeout_t timeout)
 	if (timeout_res)
 	{
 		LOG_WRN("gpio_sem timeout %d", timeout_res);
-		return -1;
+		return timeout_res;
 	}
 	LOG_INF("gpio_sem taken");
 
@@ -253,6 +261,11 @@ int lis2dh12_read_fifo_to_ringbuffer(k_timeout_t timeout)
 	if (sample_count < 0)
 	{
 		LOG_ERR("FIFO OVERRUN");
+		return sample_count;
+	}
+
+	if (sample_count == 0)
+	{
 		return sample_count;
 	}
 
