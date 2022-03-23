@@ -263,7 +263,7 @@ int lis2dh12_read_fifo_to_ringbuffer(k_timeout_t timeout)
 	if (sample_count < 0)
 	{
 		LOG_ERR("lis2dh12_read_fifo_to_ringbuffer FIFO OVERRUN");
-		return sample_count;
+		return -ENOBUFS;
 	}
 
 	if (sample_count == 0)
