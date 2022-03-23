@@ -63,7 +63,7 @@ static const struct device *gpio_dev;
 static struct gpio_callback gpio_cb;
 
 /* Semaphore will be given at very interrupt callback */
-K_SEM_DEFINE(gpio_sem, 0, 1);
+K_SEM_DEFINE(gpio_sem, 0, 5);
 
 /* -------------------------------------------------------------------------- */
 
@@ -161,6 +161,9 @@ int lis2dh12_enable_interrupt()
 void lis2dh12_enable_fifo(void)
 {
 	LOG_INF("lis2dh12_enable_fifo()");
+
+	// Reset any leftovers from previous runs of accelerometer service
+	k_sem_reset(&gpio_sem);
 
 	// Stop and Clear FIFO
 	WRITE_REG(ADDR_FIFO_CTRL_REG, FIFO_CTRL_REG_SET_FIFO_MODE_BYPASS | FIFO_CTRL_REG_SET_WATERMARK_THRESHOLD_16);
