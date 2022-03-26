@@ -54,6 +54,7 @@
  */
 #define ESC_PERIOD_USEC 20 * USEC_PER_MSEC
 
+// SET 100 * ... and 0 * ... for LED debug
 #define MAX_PULSE_WIDTH_USEC 10 * ESC_PERIOD_USEC / 100                        // 10% duty_cycle
 #define MIN_PULSE_WIDTH_USEC 5 * ESC_PERIOD_USEC / 100                         // 5% duty_cycle
 #define MID_PULSE_WIDTH_USEC (MAX_PULSE_WIDTH_USEC + MIN_PULSE_WIDTH_USEC) / 2 //
