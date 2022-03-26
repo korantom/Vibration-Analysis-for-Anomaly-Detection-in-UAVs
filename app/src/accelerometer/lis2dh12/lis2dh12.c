@@ -261,7 +261,7 @@ int lis2dh12_read_fifo_to_ringbuffer(k_timeout_t timeout)
 	int timeout_res = k_sem_take(&gpio_sem, timeout);
 	if (timeout_res)
 	{
-		LOG_WRN("gpio_sem timeout %d", timeout_res);
+		LOG_INF("gpio_sem timeout %d", timeout_res);
 		return timeout_res;
 	}
 	LOG_INF("gpio_sem taken");
