@@ -7,6 +7,8 @@
 #define TEST_FOLDER_NAME "TEST"
 #define CONFIG_FILE_NAME "config.txt"
 
+#define TEST_FILE_PREFIX "T"
+
 /**/
 #define TEST_VOLTAGE "22V"
 
@@ -32,7 +34,7 @@
 #define TEST_MEASUREMENT_DURATION_SEC 8
 
 /* time for the motor to ramp up/down before starting to read values from accelerometer */
-#define TEST_MEASUREMENT_PAUSE_DURATION_SEC 4
+#define TEST_MEASUREMENT_PAUSE_DURATION_SEC 3
 
 /* -------------------------------------------------------------------------- */
 #define STR2(s) #s
@@ -41,6 +43,7 @@
 // TODO: move to tester.h?
 #define TEST_DESCRIPTION "__TIMESTAMP__: " __TIMESTAMP__ "\n"                                                                                     \
                          "TEST_FOLDER_NAME: " TEST_FOLDER_NAME "\n"                                                                               \
+                         "TEST_FILE_PREFIX: " TEST_FILE_PREFIX "\n"                                                                               \
                          "TEST_SETUP_MOUNTING_DESCRIPTION: " TEST_SETUP_MOUNTING_DESCRIPTION "\n"                                                 \
                          "TEST_VOLTAGE: " TEST_VOLTAGE "\n"                                                                                       \
                          "TEST_MOTOR_COUNT: " TEST_MOTOR_COUNT "\n"                                                                               \

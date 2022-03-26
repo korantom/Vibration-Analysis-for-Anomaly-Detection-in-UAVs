@@ -13,4 +13,6 @@ target_sources(app PRIVATE
                src/writer/writer.c
 
                src/esc_pwm/esc_pwm.c
+
+               src/tester/tester.c
               )
