@@ -29,11 +29,14 @@ void enable_accelerometer()
 
     if (is_enabled) { return; } // TODO: avoid clearing FIFO?
 
+    fifo_overrun = false;
+    ring_buffer_insufficient_memory = false;
+
+    ring_buf_reset(&lis2dh12_ring_buf);
+    lis2dh12_enable_fifo();
+
     LOG_INF("condvar signal");
     is_enabled = true;
-
-    ring_buf_reset(&lis2dh12_ring_buf); // TODO: here or in lis2dh12_enable_fifo?
-    lis2dh12_enable_fifo();
     k_condvar_signal(&accelerometer_condvar);
 }
 
@@ -82,10 +85,21 @@ static void _accelerometer_loop()
 static void _accelerometer()
 {
     LOG_INF("_accelerometer() ");
-    int timout_res = lis2dh12_read_fifo_to_ringbuffer(K_MSEC(500));
-    if (timout_res <= 0)
+    int res = lis2dh12_read_fifo_to_ringbuffer(K_MSEC(500));
+
+    if (res == -EOVERFLOW)
     {
-        // TODO: disable?
+        LOG_ERR("FIFO overflow occured");
+        fifo_overrun = true;
+    }
+    else if (res == -ENOBUFS)
+    {
+        LOG_ERR("RINGBUFF insufficient memory");
+        ring_buffer_insufficient_memory = true;
+    }
+    else if ((res == -EBUSY) || (res == -EAGAIN)) // timeout
+    {
+        LOG_INF("lis2dh12_read_fifo_to_ringbuffer timeout");
     }
 }
 /* thread creation ----------------------------------------------------------- */
