@@ -13,8 +13,8 @@
 // TODO: move ringbuffer logic out from lis2dh12 to accelerometer?
 /* -------------------------------------------------------------------------- */
 /* TODO: will be set to true if occured during ... */
-bool fifo_overrun = false;
-bool ring_buffer_insufficient_memory = false;
+extern bool fifo_overrun;
+extern bool ring_buffer_insufficient_memory;
 /* -------------------------------------------------------------------------- */
 
 /** @brief init and config the lis2dh12 sensor, set up callback, preprare for reading data */

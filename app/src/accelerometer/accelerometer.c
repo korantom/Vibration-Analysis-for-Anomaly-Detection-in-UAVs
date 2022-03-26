@@ -7,7 +7,8 @@ K_CONDVAR_DEFINE(accelerometer_condvar); // condvar
 static bool is_enabled = false;          // condition
 
 /* define all variables and structs */
-// ...
+bool fifo_overrun = false;
+bool ring_buffer_insufficient_memory = false;
 
 LOG_MODULE_REGISTER(accelerometer);
 
