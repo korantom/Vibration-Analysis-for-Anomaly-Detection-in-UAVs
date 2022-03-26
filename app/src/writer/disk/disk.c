@@ -281,6 +281,19 @@ int disk_flush()
 }
 /* -------------------------------------------------------------------------- */
 
+int disk_create_folder(const char *dir_name)
+{
+
+    char path[100];
+
+    snprintf(path, sizeof(path), "%s/%s", DISK_MOUNT_PT, dir_name);
+    int res = fs_mkdir(path);
+
+    return res;
+}
+
+/* -------------------------------------------------------------------------- */
+
 // void test()
 // {
 //     disk_test_config();
