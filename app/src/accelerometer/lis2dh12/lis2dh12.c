@@ -174,6 +174,16 @@ void lis2dh12_enable_fifo(void)
 	WRITE_REG(ADDR_FIFO_CTRL_REG, FIFO_CTRL_REG_SET_FIFO_MODE_FIFO | FIFO_CTRL_REG_SET_WATERMARK_THRESHOLD_16);
 }
 
+void lis2dh12_disable_fifo(void)
+{
+	LOG_INF("lis2dh12_disable_fifo()");
+
+	k_sem_reset(&gpio_sem);
+
+	// Stop and Clear FIFO
+	WRITE_REG(ADDR_FIFO_CTRL_REG, FIFO_CTRL_REG_SET_FIFO_MODE_BYPASS | FIFO_CTRL_REG_SET_WATERMARK_THRESHOLD_16);
+}
+
 /* -------------------------------------------------------------------------- */
 
 /**

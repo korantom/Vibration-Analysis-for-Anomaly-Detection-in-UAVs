@@ -257,6 +257,9 @@ int lis2dh12_enable_interrupt();
  */
 void lis2dh12_enable_fifo(void);
 
+/** @brief FIFO clear: set FIFO to Bypass mode (FIFO is not operating, it is emptied and will remain empty) */
+void lis2dh12_disable_fifo(void);
+
 /**
  * @brief   reads n sample from the sesors FIFO
  * @details wait for interrupt to happen (sem_take), i.e. data ready in FIFO,
