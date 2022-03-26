@@ -80,8 +80,8 @@ static void lis_interrupt_callback(const struct device *dev,
 /* -------------------------------------------------------------------------- */
 
 // RING_BUF_ITEM_DECLARE_POW2(lis2dh12_ring_buf, 8);			   // unusable, can't align mem 6 and 4
-RING_BUF_ITEM_DECLARE_SIZE(lis2dh12_ring_buf, 4 * 32 * 2 * 3 * 4); // TODO: size
-K_SEM_DEFINE(ring_buf_sem, 0, 100);								   // TODO: count_limit
+RING_BUF_ITEM_DECLARE_SIZE(lis2dh12_ring_buf, 32 * 32 * 2 * 3 * 4); // TODO: size
+K_SEM_DEFINE(ring_buf_sem, 0, 100);									// TODO: count_limit
 
 /* -------------------------------------------------------------------------- */
 
