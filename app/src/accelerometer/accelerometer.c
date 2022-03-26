@@ -46,6 +46,8 @@ void disable_accelerometer()
     /* will be called from another thread (shell, main, ...) */
     LOG_INF("disable_accelerometer()");
     is_enabled = false;
+
+    lis2dh12_disable_fifo();
 }
 
 /* private functions --------------------------------------------------------- */
@@ -92,11 +94,13 @@ static void _accelerometer()
     {
         LOG_ERR("FIFO overflow occured");
         fifo_overrun = true;
+        disable_accelerometer();
     }
     else if (res == -ENOBUFS)
     {
         LOG_ERR("RINGBUFF insufficient memory");
         ring_buffer_insufficient_memory = true;
+        disable_accelerometer();
     }
     else if ((res == -EBUSY) || (res == -EAGAIN)) // timeout
     {
