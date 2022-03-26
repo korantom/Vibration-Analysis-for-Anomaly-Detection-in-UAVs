@@ -265,8 +265,11 @@ void lis2dh12_enable_fifo(void);
  * TODO: should be in accelerometer, in lis2dh12 should contain only driver/wrapper functions
  * @note 1 sample = 3 axis values = 3*2 bytes
  * @param timeout maximum time to wait for interrupt (sem_take)
- * @retval > 0 sample count read into the ringbuffer
- * @retval < 0 on error (ringbuffer full) / timeout
+ * @retval > 0 sample written into the ringbuffer
+ * @retval = 0 sample written into the ringbuffer (shouldnt occur, 0 samples written = interrupt occured but empty FIFO)
+ * @retval = -ENOBUFS Ring buffer is full
+ * @retval = -EOVERFLOW FIFO overrun
+ * @retval = -EBUSY | -EAGAIN sem_take timeout occured (no interrupt occured to give sem and notify enough samples ready)
  */
 int lis2dh12_read_fifo_to_ringbuffer(k_timeout_t timeout);
 

@@ -190,9 +190,8 @@ void lis2dh12_enable_fifo(void)
  * @param p_ring_buf - pointer to ring buffer
  * @param byte_count - total number of bytes to read from FIFO to ring buffer (sample_count * bytes_per_sample)
  *
- * @retval > 0 - number of bytes read and written succesfuly from from FIFO into ring buffer
+ * @retval > 0 - number of bytes read and written succesfuly from from FIFO into ring buffer (if less written than requested => INSUFFICIENT RING BUFF MEM)
  * @retval = 0 - requested 0 bytes to write
- * @retval < 0 - error (insufficient ring buffer memory, i2c_burst_read error, ...)
  */
 int i2c_ringbuffer_burst_read(struct ring_buf *p_ring_buf, int byte_count)
 {
@@ -217,7 +216,7 @@ int i2c_ringbuffer_burst_read(struct ring_buf *p_ring_buf, int byte_count)
 	{
 		LOG_ERR("RING BUFFER FULL: claimed=%d, alocated=%d, space=%d", byte_count, ringbuf_aloc_size, ring_buf_space_get(p_ring_buf));
 		ring_buf_put_finish(p_ring_buf, 0);
-		return -ENOBUFS;
+		return 0;
 	}
 	else if (ringbuf_aloc_size < byte_count) // Not enough continuous space
 	{
@@ -263,13 +262,13 @@ int lis2dh12_read_fifo_to_ringbuffer(k_timeout_t timeout)
 	if (sample_count < 0)
 	{
 		LOG_ERR("lis2dh12_read_fifo_to_ringbuffer FIFO OVERRUN");
-		return -ENOBUFS;
+		return -EOVERFLOW;
 	}
 
 	if (sample_count == 0)
 	{
 		LOG_WRN("lis2dh12_read_fifo_to_ringbuffer FIFO 0 samples");
-		return sample_count;
+		return 0;
 	}
 
 	////////////////////////////////////////////////////////////////////////////
