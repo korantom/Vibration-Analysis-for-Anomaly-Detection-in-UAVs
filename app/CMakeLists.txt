@@ -7,12 +7,7 @@ target_sources(app PRIVATE
 
                src/accelerometer/lis2dh12/lis2dh12.c
                src/accelerometer/accelerometer.c
-               src/shell_debug/lis2dh12_shell_debug.c
-
-               src/writer/disk/disk.c
-               src/writer/writer.c
 
                src/esc_pwm/esc_pwm.c
 
-               src/tester/tester.c
               )
