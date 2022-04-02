@@ -96,12 +96,12 @@ int pwm_set_throttle(uint32_t percentage)
 }
 /* -------------------------------------------------------------------------- */
 
-void pwm_arm()
+int pwm_arm()
 {
     LOG_INF("pwm_arm()");
 
     // set pwm LOW
-    pwm_set_throttle(0);
+    int res = pwm_set_throttle(0);
 
     // wait 2-5 sec
     LOG_INF("PWM_ARM_SLEEP %u ms", PWM_ARM_SLEEP_MSEC);
@@ -110,6 +110,7 @@ void pwm_arm()
     // ready to go?
 
     LOG_INF("pwm_arm done");
+    return res;
 }
 
 void pwm_calib()

@@ -121,8 +121,11 @@
  */
 int pwm_init(void);
 
-/** @brief set pwm LOW */
-void pwm_arm(void);
+/** @brief set pwm LOW
+ * @retval   0 on success
+ * @retval < 0 on error
+ */
+int pwm_arm(void);
 
 /**
  * @brief  set all devices pwm pulse width to pulse_width_usec
