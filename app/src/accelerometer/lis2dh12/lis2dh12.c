@@ -78,10 +78,16 @@ static void lis_interrupt_callback(const struct device *dev,
 }
 
 /* -------------------------------------------------------------------------- */
-
+/* RING BUFFER SIZE
+- 1 axis = 2 bytes
+- 1 sample = 3 axis = 6 bytes
+- sr 400 Hz = 400 samples/sec = 400*6 = 2 400 Bytes/sec
+- 1 test = 1-10 second = 2 400 - 24 000 Bytes
+- (sr 1 344 Hz = +- 3.5*[2 400 - 24 000 Bytes] = 8 400 - 84 000 Bytes)
+*/
 // RING_BUF_ITEM_DECLARE_POW2(lis2dh12_ring_buf, 8);			   // unusable, can't align mem 6 and 4
-RING_BUF_ITEM_DECLARE_SIZE(lis2dh12_ring_buf, 32 * 32 * 2 * 3 * 4); // TODO: size
-K_SEM_DEFINE(ring_buf_sem, 0, 100);									// TODO: count_limit
+RING_BUF_ITEM_DECLARE_SIZE(lis2dh12_ring_buf, 4 * 6 * 1000); // TODO: size
+K_SEM_DEFINE(ring_buf_sem, 0, 100);							 // TODO: count_limit
 
 /* -------------------------------------------------------------------------- */
 
