@@ -13,7 +13,7 @@ LOG_MODULE_REGISTER(main);
 
 void main(void)
 {
-    printk("Main: Hello world\n");
+    // printk("Main: Hello world\n");
 }
 
 /* -------------------------------------------------------------------------- */
