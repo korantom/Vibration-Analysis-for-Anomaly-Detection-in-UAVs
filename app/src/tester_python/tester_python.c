@@ -178,7 +178,7 @@ static int cmd_tester_init(const struct shell *shell, size_t argc, char **argv)
     ARG_UNUSED(argc);
     ARG_UNUSED(argv);
 
-    int res = tester_init();
+    tester_init();
     return 0;
 }
 
