@@ -64,6 +64,7 @@ class Tester:
     def __init__(self, tester_config: Type[TesterConfig]):
         self.tester_config = tester_config
         self.serial_wrapper = SerialWrapper()
+        self.tester_ready = False
 
     def get_test_file_name(self, test_index: int) -> str:
         throttle_count = len(self.tester_config.test_motor_throttle_values)
@@ -99,10 +100,24 @@ class Tester:
                 f.write(line)
 
     ############################################################################
+    def tester_init(self):
+        print("tester_init")
+        if self.serial_wrapper.shell_state == ShellState.NOT_READY:
+            self.serial_wrapper.wait_for_write_ready()
+            self.serial_wrapper.write_command("tester_init")
+            self.serial_wrapper.wait_for_write_ready()
+
+            self.tester_ready = True
 
     ############################################################################
 
     def tester_start(self):
+        if self.tester_ready == False:
+            print("Tester not ready")
+            return
+        # prevent calling 2x conseq
+        self.tester_ready = False
+
         throttle_count = len(self.tester_config.test_motor_throttle_values)
         test_count = throttle_count * (
             self.tester_config.test_measurements_count // throttle_count
@@ -125,12 +140,6 @@ class Tester:
 
             ####################################################################
 
-            if self.serial_wrapper.shell_state == ShellState.NOT_READY:
-                print("INIT")
-                self.serial_wrapper.wait_for_write_ready()
-                self.serial_wrapper.write_command("tester_init")
-                self.serial_wrapper.wait_for_write_ready()
-
             if self.serial_wrapper.shell_state == ShellState.WRITE_READY:
                 self.serial_wrapper.clear()
 
@@ -145,12 +154,57 @@ class Tester:
 
             self.write_test(test_file_name, data_queue)
 
+    def stop(self):
+        cmd = f"{'single_test_dump'} {0} {1} {1} {10}"
+        self.serial_wrapper.write_command(cmd)
+
+
+def SIGINT_handler(signal_received, frame):
+    print("SIGINT or CTRL-C detected. Exiting gracefully")
+    tester.stop()
+    exit(0)
+
 
 if __name__ == "__main__":
+    signal(SIGINT, SIGINT_handler)
+
     tester_config = TesterConfig()
 
+    global tester
     tester = Tester(tester_config)
 
     tester.write_config()
 
+    print("FLASH and RESET BLIP")
+
+    tester.tester_init()
+
+    while input("Enter 'START': ") != "START":
+        time.sleep(1)
+
+    print("Starting tester in 15sec")
+    time.sleep(15)
+
     tester.tester_start()
+
+
+"""
+TEST WORKFLOW/STEPS
+0. Preliminaries:
+    - ESCs have been calibrated
+    - double check HW, is all mounted and safe
+    - SD card should be wiped and inside the device
+    - change logging priority to ERR/WRN
+    - ...
+1. ALL turned off
+
+2. FLASH and RESET blib
+
+4. start python test controller script
+    - waits until BLIP is RESET
+
+5. power on the ESCs
+
+6. Start test by typing START
+
+"""
