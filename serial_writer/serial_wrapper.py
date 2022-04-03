@@ -10,7 +10,7 @@ DATA_PREFIX = "_data_: "
 SHELL_PROMPT = "uart:~$"
 PORT = "/dev/cu.usbmodemC1E9B7D03"
 BAUDRATE = 115200
-TIMEOUT = 1
+TIMEOUT = 2.0
 
 
 class ShellState(Enum):
@@ -26,6 +26,7 @@ class SerialWrapper:
             port=PORT,
             baudrate=BAUDRATE,
             timeout=TIMEOUT,
+            write_timeout=2.0,
         )
 
         self.shell_state = ShellState.NOT_READY
@@ -40,9 +41,10 @@ class SerialWrapper:
     def write_command(self, cmd: str):
         print(f"write_command({cmd})")
         self.wait_for_write_ready()
-        cmd += "\r\n"
+        cmd += "\r"
         self.shell_state = ShellState.WRITEN
         self.ser.write(cmd.encode("utf-8"))
+        self.ser.flush()
 
     # def read_data(self) -> Queue:
     #     pass
@@ -66,11 +68,20 @@ class SerialWrapper:
             # print(f"{buffered_byte_count=}")
 
             line_bytes = self.ser.readline()
-            line_str = line_bytes.decode("utf-8")
+            try:
+                line_str = line_bytes.decode("utf-8")
+            except:
+                line_str = "ERROR decoding utf-8"
+                print(line_bytes)
 
             if line_bytes != bytes():
                 line_str = self.filter_data_str(line_str)
-                if (line_str != "") and (line_str != None) and (line_str != "\r\n"):
+                if (
+                    (line_str != "")
+                    and (line_str != None)
+                    and (line_str != "\r\n")
+                    and (line_str != "\r")
+                ):
                     print(line_str)
 
             self.check_shell_prompt(line_str)
