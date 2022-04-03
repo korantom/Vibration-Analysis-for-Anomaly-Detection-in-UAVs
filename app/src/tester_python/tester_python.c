@@ -68,6 +68,7 @@ int tester_init(void)
     {
         return -1;
     }
+    k_msleep(10 * MSEC_PER_SEC);
 
     tester_ready = true;
 
