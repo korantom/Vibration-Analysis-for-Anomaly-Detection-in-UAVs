@@ -1,20 +1,11 @@
 from datetime import datetime
 from dataclasses import dataclass, field
 from dataclasses_json import dataclass_json
-from enum import Enum
 import os
 from queue import Queue
 from typing import Type, List
 
-
-################################################################################
-
-
-class ShellState(Enum):
-    NOT_READY = 0
-    READ_READY = 1
-    WRITE_READY = 2
-
+from serial_wrapper import *
 
 ################################################################################
 
@@ -41,24 +32,24 @@ class TesterConfig:
     test_esc_config_description: str = "default"
 
     # testing config
-    test_measurements_count: int = 100
+    test_measurements_count: int = 10
     test_motor_throttle_values: List[int] = field(
         default_factory=lambda: [10, 15, 25, 50, 75, 90, 100, 0]
     )
     test_ramp_up_duration_sec: int = 2
-    test_measurement_duration_sec: int = 8
+    test_measurement_duration_sec: int = 4
     test_pause_duration_sec: int = 2
 
     # shell config/commands
     # TODO:
-    test_config_shell_commands: List[str] = field(
-        default_factory=lambda: [
-            "tester_init",
-        ]
-    )
+    # test_config_shell_commands: List[str] = field(
+    #     default_factory=lambda: [
+    #         "tester_init",
+    #     ]
+    # )
 
-    # TODO: ...
-    test_shell_command: str = "single_test_dump"
+    # # TODO: ...
+    # test_shell_command: str = "single_test_dump"
 
     ############################################################################
     def __post_init__(self):
@@ -72,7 +63,7 @@ class TesterConfig:
 class Tester:
     def __init__(self, tester_config: Type[TesterConfig]):
         self.tester_config = tester_config
-        self.shell_state = ShellState.NOT_READY
+        self.serial_wrapper = SerialWrapper()
 
     def get_test_file_name(self, test_index: int) -> str:
         throttle_count = len(self.tester_config.test_motor_throttle_values)
@@ -85,6 +76,8 @@ class Tester:
         return test_file_name
 
     def write_config(self):
+        # TODO: get commit hash
+
         # Assemble path
         path = self.tester_config.path + "/" + self.tester_config.test_config_file_name
 
@@ -107,6 +100,8 @@ class Tester:
 
     ############################################################################
 
+    ############################################################################
+
     def tester_start(self):
         throttle_count = len(self.tester_config.test_motor_throttle_values)
         test_count = throttle_count * (
@@ -114,21 +109,41 @@ class Tester:
         )
 
         for i in range(test_count):
-
+            print(i)
             throttle = self.tester_config.test_motor_throttle_values[i % throttle_count]
             ramp_up_d = self.tester_config.test_ramp_up_duration_sec
             measurement_d = self.tester_config.test_measurement_duration_sec
             pause_d = self.tester_config.test_pause_duration_sec
 
-            cmd = f"{self.tester_config.test_shell_command} {throttle} {ramp_up_d} {measurement_d} {pause_d}"
+            cmd = (
+                f"{'single_test_dump'} {throttle} {ramp_up_d} {measurement_d} {pause_d}"
+            )
+
             test_file_name = self.get_test_file_name(i)
-            ####################################################################
 
-            if self.shell_state == ShellState.WRITE_READY:
-                pass
+            data_queue = Queue()
 
             ####################################################################
-            self.write_test(test_file_name, Queue())
+
+            if self.serial_wrapper.shell_state == ShellState.NOT_READY:
+                print("INIT")
+                self.serial_wrapper.wait_for_write_ready()
+                self.serial_wrapper.write_command("tester_init")
+                self.serial_wrapper.wait_for_write_ready()
+
+            if self.serial_wrapper.shell_state == ShellState.WRITE_READY:
+                self.serial_wrapper.clear()
+
+                self.serial_wrapper.write_command(cmd)
+                self.serial_wrapper.wait_for_write_ready()
+
+                if self.serial_wrapper.shell_state == ShellState.WRITE_READY:
+                    print(f"copy data_queue")
+                    data_queue = self.serial_wrapper.data_queue
+
+            ####################################################################
+
+            self.write_test(test_file_name, data_queue)
 
 
 if __name__ == "__main__":
