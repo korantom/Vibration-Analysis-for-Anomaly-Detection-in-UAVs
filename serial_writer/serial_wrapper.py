@@ -43,7 +43,7 @@ class SerialWrapper:
         self.wait_for_write_ready()
         cmd += "\r"
         self.shell_state = ShellState.WRITEN
-        self.ser.write(cmd.encode("utf-8"))
+        self.ser.write(cmd.encode("ascii"))
         self.ser.flush()
 
     # def read_data(self) -> Queue:
@@ -69,9 +69,9 @@ class SerialWrapper:
 
             line_bytes = self.ser.readline()
             try:
-                line_str = line_bytes.decode("utf-8")
+                line_str = line_bytes.decode("ascii")
             except:
-                line_str = "ERROR decoding utf-8"
+                line_str = "ERROR decoding ascii"
                 print(line_bytes)
 
             if line_bytes != bytes():
