@@ -114,7 +114,7 @@ void dump_ring_buffer_to_console()
 }
 /* -------------------------------------------------------------------------- */
 // DUMP ALL AT ONCE
-void single_test_dump(uint32_t throttle_percentage, uint32_t ramp_up_duration_sec, uint32_t test_duration_sec)
+void single_test_dump(uint32_t throttle_percentage, uint32_t ramp_up_duration_sec, uint32_t test_duration_sec, uint32_t pause_duration_sec)
 {
     if (tester_ready == false)
     {
@@ -149,7 +149,7 @@ void single_test_dump(uint32_t throttle_percentage, uint32_t ramp_up_duration_se
     // DUMP
     dump_ring_buffer_to_console();
 
-    k_msleep(2 * MSEC_PER_SEC);
+    k_msleep(pause_duration_sec * MSEC_PER_SEC);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -165,12 +165,13 @@ static int cmd_single_test_dump(const struct shell *shell, size_t argc, char **a
     uint32_t throttle_percentage = atoi(argv[1]);
     uint32_t ramp_up_duration_sec = atoi(argv[2]);
     uint32_t test_duration_sec = atoi(argv[3]);
+    uint32_t pause_duration_sec = atoi(argv[4]);
 
-    single_test_dump(throttle_percentage, ramp_up_duration_sec, test_duration_sec);
+    single_test_dump(throttle_percentage, ramp_up_duration_sec, test_duration_sec, pause_duration_sec);
     return 0;
 }
 
-SHELL_CMD_ARG_REGISTER(single_test_dump, NULL, "...", cmd_single_test_dump, 4, 0);
+SHELL_CMD_ARG_REGISTER(single_test_dump, NULL, "...", cmd_single_test_dump, 5, 0);
 
 static int cmd_tester_init(const struct shell *shell, size_t argc, char **argv)
 {
