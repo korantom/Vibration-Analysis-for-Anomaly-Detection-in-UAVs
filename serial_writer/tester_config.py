@@ -20,7 +20,7 @@ class TesterConfig:
     test_files_prefix: str = "T"
 
     # drone config
-    test_voltage: int = 22
+    test_voltage: int = 20
     test_mounting_setup_description: str = ""
     test_motor_count: int = 1
     test_motor_states: List[str] = field(
@@ -32,12 +32,12 @@ class TesterConfig:
     test_esc_config_description: str = "default"
 
     # testing config
-    test_measurements_count: int = 10
+    test_measurements_count: int = 20
     test_motor_throttle_values: List[int] = field(
         default_factory=lambda: [10, 15, 25, 50, 75, 90, 100, 0]
     )
     test_ramp_up_duration_sec: int = 2
-    test_measurement_duration_sec: int = 4
+    test_measurement_duration_sec: int = 8
     test_pause_duration_sec: int = 2
 
     # shell config/commands
