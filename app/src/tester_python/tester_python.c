@@ -1,5 +1,6 @@
 #include <logging/log.h>
 #include <shell/shell.h>
+#include <sys/printk.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -167,6 +168,8 @@ static int cmd_single_test_dump(const struct shell *shell, size_t argc, char **a
     uint32_t ramp_up_duration_sec = atoi(argv[2]);
     uint32_t test_duration_sec = atoi(argv[3]);
     uint32_t pause_duration_sec = atoi(argv[4]);
+
+    printk("%d %d %d %d.\n", throttle_percentage, ramp_up_duration_sec, test_duration_sec, pause_duration_sec);
 
     single_test_dump(throttle_percentage, ramp_up_duration_sec, test_duration_sec, pause_duration_sec);
     return 0;
