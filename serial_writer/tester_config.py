@@ -70,10 +70,13 @@ class Tester:
         throttle_count = len(self.tester_config.test_motor_throttle_values)
 
         prefix = self.tester_config.test_files_prefix
-        throttle_prefix = "ABCDEFGH"[test_index % throttle_count]
+        throttle = self.tester_config.test_motor_throttle_values[
+            test_index % throttle_count
+        ]
+        # throttle_prefix = "ABCDEFGH"[test_index % throttle_count]
         test_index_for_throttle = test_index // throttle_count
 
-        test_file_name = f"{prefix}_{throttle_prefix}_{test_index_for_throttle}.csv"
+        test_file_name = f"{prefix}_{throttle:03d}t_{test_index_for_throttle:04d}.csv"
         return test_file_name
 
     def write_config(self):
