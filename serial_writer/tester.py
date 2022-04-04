@@ -92,9 +92,43 @@ class Tester:
         # prevent calling consequtively
         self.tester_ready = False
 
+        throttle_count = len(self.tester_config.test_motor_throttle_values)
+        test_count = throttle_count * (
+            self.tester_config.test_measurements_count // throttle_count
+        )
 
+        for i in range(test_count):
+            print("PERFORMING TEST {i}")
 
-################################################################################
+            # Preprare cmd, file_name, data_queue
+
+            throttle = self.tester_config.test_motor_throttle_values[i % throttle_count]
+            ramp_up_d = self.tester_config.test_ramp_up_duration_sec
+            measurement_d = self.tester_config.test_measurement_duration_sec
+            pause_d = self.tester_config.test_pause_duration_sec
+
+            cmd = (
+                f"{'single_test_dump'} {throttle} {ramp_up_d} {measurement_d} {pause_d}"
+            )
+
+            test_file_name = self.get_test_file_name(i)
+
+            data_queue = Queue()
+            self.serial_wrapper.clear()
+
+            # Wait ...
+            self.serial_wrapper.wait_for_write_ready()
+
+            # Write cmd (measure data)
+            self.serial_wrapper.write_command(cmd)
+            self.serial_wrapper.wait_for_write_ready()
+
+            # copy data queue
+            data_queue = self.serial_wrapper.data_queue
+
+            # write data to file
+            self.write_test(test_file_name, data_queue)
+
 
 """
 TEST WORKFLOW/STEPS
