@@ -1,4 +1,5 @@
 import os
+import time
 from queue import Queue
 from typing import Type
 
@@ -82,3 +83,33 @@ class Tester:
 
     ############################################################################
 
+    def tester_start(self):
+        print("tester.tester_start()")
+        if self.tester_ready == False:
+            print(f"{self.tester_ready=}")
+            return
+
+        # prevent calling consequtively
+        self.tester_ready = False
+
+
+
+if __name__ == "__main__":
+    tester_config = TesterConfig()
+
+    global tester
+    tester = Tester(tester_config)
+
+    tester.save_config()
+
+    print("FLASH and RESET BLIP")
+
+    tester.tester_init()
+
+    while input("Enter 'START': ") != "START":
+        pass
+
+    print("Starting tester in 15sec")
+    time.sleep(15)
+
+    tester.tester_start()
