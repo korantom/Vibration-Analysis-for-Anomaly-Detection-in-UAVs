@@ -10,4 +10,5 @@ target_sources(app PRIVATE
 
                src/esc_pwm/esc_pwm.c
 
+               src/tester_python/tester_python.c
               )
