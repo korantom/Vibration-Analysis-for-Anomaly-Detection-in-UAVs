@@ -67,3 +67,21 @@ void single_test_dump(uint32_t throttle_percentage, uint32_t ramp_up_duration_se
 // TODO: shell wrapper commands around each ...
 
 /* -------------------------------------------------------------------------- */
+
+static int cmd_tester_infinite_print(const struct shell *shell, size_t argc, char **argv)
+{
+    ARG_UNUSED(argc);
+    ARG_UNUSED(argv);
+
+    int i = 0;
+    while (1)
+    {
+        k_msleep(2000);
+        printk("foo %04d\n", i++);
+    }
+    return 0;
+}
+
+SHELL_CMD_REGISTER(tester_infinite_print, NULL, "...", cmd_tester_infinite_print);
+
+/* -------------------------------------------------------------------------- */
