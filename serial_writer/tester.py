@@ -61,4 +61,21 @@ class Tester:
                 line = data_queue.get()
                 f.write(line)
 
+    ############################################################################
+
+    def tester_init(self):
+        print("tester.tester_init()")
+
+        # TODO: wait for RESET or ...
+        if self.serial_wrapper.shell_state == ShellState.UNKNOWN:
+            self.serial_wrapper.write_command("")
+            self.serial_wrapper.write_command("")
+            self.serial_wrapper.wait_for_write_ready()
+
+        if self.serial_wrapper.shell_state == ShellState.WRITE_READY:
+            self.serial_wrapper.write_command("tester_init")
+            self.serial_wrapper.wait_for_write_ready()
+            self.tester_ready = True
+
+    ############################################################################
 
