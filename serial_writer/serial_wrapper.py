@@ -79,6 +79,15 @@ class SerialWrapper:
         print(f"SerialWrapper.clear")
         self.data_queue = Queue()
 
+    def check_if_ready(self):
+        print(f"SerialWrapper.check_if_ready()")
+        self.ser.write("\n".encode(ENCODING))
+        # TODO: call once only or multiple times and clear input buffer
+        # self.ser.write("\n".encode(ENCODING))
+        time.sleep(0.5)
+        self.wait_for_write_ready()
+        # self.ser.reset_input_buffer()
+
     def write_command(self, cmd: str):
         print(f"SerialWrapper.write_command(): -> {cmd}")
         self.wait_for_write_ready()

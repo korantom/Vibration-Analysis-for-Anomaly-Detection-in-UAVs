@@ -66,16 +66,19 @@ class Tester:
     def tester_init(self):
         print("tester.tester_init()")
 
-        # TODO: wait for RESET or ...
+        # TODO: or just wait for RESET
         if self.serial_wrapper.shell_state == ShellState.UNKNOWN:
-            self.serial_wrapper.write_command("")
-            self.serial_wrapper.write_command("")
+            self.serial_wrapper.check_if_ready()
             self.serial_wrapper.wait_for_write_ready()
+
+        # TODO: flush input buffer?
 
         if self.serial_wrapper.shell_state == ShellState.WRITE_READY:
             self.serial_wrapper.write_command("tester_init")
             self.serial_wrapper.wait_for_write_ready()
             self.tester_ready = True
+
+        self.serial_wrapper.wait_for_write_ready()
 
     ############################################################################
 
