@@ -245,9 +245,16 @@ static int cmd_single_test_dump(const struct shell *shell, size_t argc, char **a
     uint32_t test_duration_sec = atoi(argv[3]);
     uint32_t pause_duration_sec = atoi(argv[4]);
 
+    printk("tester_single_test_dump %d %d %d %d\n", throttle_percentage, ramp_up_duration_sec, test_duration_sec, pause_duration_sec);
+
     if ((throttle_percentage > 100) || (throttle_percentage < 0))
     {
         printk("ERROR: throttle_percentage=%d not in range [0-100].\n", throttle_percentage);
+        return 0;
+    }
+    if (ramp_up_duration_sec + test_duration_sec + pause_duration_sec > 30)
+    {
+        printk("ERROR: too large durations.\n");
         return 0;
     }
 
