@@ -46,7 +46,6 @@ class SerialWrapper:
         # TODO: will crash on consequtive calls
 
         self.ser.write("\n".encode(ENCODING))
-        self.ser.write("\n".encode(ENCODING))
 
         self.wait_for_write_ready()
 
