@@ -172,3 +172,53 @@ void dump_ring_buffer_to_console()
 }
 
 /* -------------------------------------------------------------------------- */
+
+void single_test_dump(uint32_t throttle_percentage, uint32_t ramp_up_duration_sec, uint32_t test_duration_sec, uint32_t pause_duration_sec)
+{
+    if (tester_ready == false)
+    {
+        printk("ERROR: TESTER not ready, make sure tester_init() called and completed succesfully.\n");
+        return;
+    }
+
+    if (throttle_percentage < 0 || throttle_percentage > 100)
+    {
+        printk("ERROR: throttle_percentage=%d not in range [0-100].\n", throttle_percentage);
+        return;
+    }
+
+    // START MOTOR
+    pwm_set_throttle(throttle_percentage);
+
+    // RAMP UP PAUSE
+    k_msleep(ramp_up_duration_sec * MSEC_PER_SEC);
+
+    // ENABLE ACCELEROMETER
+    enable_accelerometer();
+
+    // TEST ... WAIT
+    k_msleep(test_duration_sec * MSEC_PER_SEC);
+
+    // DISABLE ACCELEROMETER
+    disable_accelerometer();
+
+    // STOP MOTOR
+    pwm_set_throttle(0);
+
+    // CHECK NO OVERRUN OR MISSING DATA
+    if (fifo_overrun || ring_buffer_insufficient_memory)
+    {
+        printk("ERROR: fifo_overrun: %d, ring_buffer_insufficient_memory: %d", fifo_overrun, ring_buffer_insufficient_memory);
+    }
+
+    // DUMP
+    dump_ring_buffer_to_console();
+
+    k_msleep(pause_duration_sec * MSEC_PER_SEC); // TODO: useless?
+}
+
+/* -------------------------------------------------------------------------- */
+
+// TODO: continuous write
+
+/* -------------------------------------------------------------------------- */
