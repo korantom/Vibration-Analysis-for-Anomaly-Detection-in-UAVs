@@ -35,7 +35,7 @@ class Tester:
         return test_file_name
 
     def save_config(self):
-        # TODO: get commit hash
+        """Saves tester config to a json file."""
 
         # Assemble path
         path = self.tester_config.path + "/" + self.tester_config.test_config_file_name
@@ -46,3 +46,19 @@ class Tester:
         # Write config
         with open(path, "w") as f:
             f.write(self.tester_config.to_json())
+
+    def write_test(self, file_name: str, data_queue: Queue):
+        """Writes content of data queue to a file."""
+
+        # Assemble path
+        path = self.tester_config.path + "/" + file_name
+
+        # Assumes directories exist
+
+        # Write data
+        with open(path, "w") as f:
+            while not data_queue.empty():
+                line = data_queue.get()
+                f.write(line)
+
+
