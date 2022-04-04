@@ -52,3 +52,43 @@ class SerialWrapper:
         self.shell_state = ShellState.WRITEN
         self.ser.write(cmd.encode(ENCODING))
         self.ser.flush()
+
+    def filter_data_str(self, line: str) -> str:
+        # TODO: DATA_PREFIX in line but doesnt start? possible?
+
+        if line.startswith(DATA_PREFIX):
+            data = line.split(DATA_PREFIX)
+            self.data_queue.put(data[1])
+            return data[0]
+        else:
+            return line
+
+    def wait_for_write_ready(self):
+        print("SerialWrapper.wait_for_write_ready()")
+
+        # assumes all data is dumped (written) by the time prompt appears
+        # (i.e. single thread design, either doing ... or idle = console prompt ...)
+
+        while self.shell_state != ShellState.WRITE_READY:
+
+            # Read a '\n' terminated line (timeouts)
+            line_bytes = self.ser.readline()
+
+            # Skip if nothing read
+            if line_bytes == bytes():
+                continue
+
+            # Try to decode read line
+            try:
+                line_str = line_bytes.decode(ENCODING)
+            except:
+                line_str = f"ERROR decoding {ENCODING}, unable to decode. {line_bytes}"
+                # skip/continue/...?
+
+            line_str = self.filter_data_str(line_str)
+            if line_str in ["", None, "\r", "\n", "\r\n"]:
+                continue
+
+            self.check_shell_prompt(line_str)
+
+            print(line_str)
