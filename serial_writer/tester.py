@@ -25,7 +25,7 @@ class Tester:
 
         # throttle_prefix = "ABCDEFGH"[test_index % throttle_count]
         # instead of encoding as letter use explicitly the value
-        throttle = throttle_count[test_index % throttle_count]
+        throttle = test_motor_throttle_values[test_index % throttle_count]
 
         test_index_for_throttle_value = test_index // throttle_count
 
