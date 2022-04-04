@@ -262,4 +262,4 @@ static int cmd_single_test_dump(const struct shell *shell, size_t argc, char **a
     return 0;
 }
 
-SHELL_CMD_ARG_REGISTER(tester_single_test_dump, NULL, "Call single_test_dump()", cmd_single_test_dump, 5, 0);
+SHELL_CMD_ARG_REGISTER(t_s_t_d, NULL, "Call single_test_dump()", cmd_single_test_dump, 5, 0);
