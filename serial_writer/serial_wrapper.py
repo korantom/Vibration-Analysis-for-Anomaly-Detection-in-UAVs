@@ -3,6 +3,8 @@ from queue import Queue
 import serial
 import time
 
+import signal
+
 # TODO: move CONFIG
 DATA_PREFIX = "_data_:"
 SHELL_PROMPT = "uart:~$"
@@ -36,6 +38,38 @@ class SerialWrapper:
 
         # Wait for serial to open
         time.sleep(2)
+
+        signal.signal(signal.SIGINT, self.SIGINT_handler)
+
+    def SIGINT_handler(self, signal_received, frame):
+        """on ctrl-c switch to interactive mode"""
+        # TODO: will crash on consequtive calls
+
+        self.ser.write("\n".encode(ENCODING))
+        self.ser.write("\n".encode(ENCODING))
+
+        self.wait_for_write_ready()
+
+        while True:
+            line_bytes = self.ser.readline()
+
+            if line_bytes == bytes():
+                continue
+
+            try:
+                line_str = line_bytes.decode(ENCODING)
+            except:
+                line_str = f"ERROR decoding {ENCODING}, unable to decode. {line_bytes}"
+            print(line_str)
+
+            if SHELL_PROMPT in line_str:
+                while (cmd := input(SHELL_PROMPT)) == "":
+                    pass
+                if cmd == "exit":
+                    exit(0)
+
+                cmd += "\n"
+                self.ser.write(cmd.encode(ENCODING))
 
     def check_shell_prompt(self, line: str):
         if (line != None) and (SHELL_PROMPT in line):
