@@ -94,6 +94,31 @@ class Tester:
 
 
 
+################################################################################
+
+"""
+TEST WORKFLOW/STEPS
+0. Preliminaries:
+    - ESCs have been calibrated
+    - double check HW, is all mounted and safe
+    - SD card should be wiped and inside the device
+    - change logging priority to ERR/WRN
+    - ...
+1. ALL turned off
+
+2. FLASH and RESET blib
+
+4. start python test controller script
+    - write to uart "\n" (or RESET BLIP) and wait until prompt ready for write
+    - tester_init
+
+5. power on the ESCs
+
+6. python
+    - start tester
+    - ....
+
+"""
 if __name__ == "__main__":
     tester_config = TesterConfig()
 
