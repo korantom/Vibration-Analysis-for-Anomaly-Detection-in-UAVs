@@ -108,7 +108,7 @@ class Tester:
             pause_d = self.tester_config.test_pause_duration_sec
 
             cmd = (
-                f"{'single_test_dump'} {throttle} {ramp_up_d} {measurement_d} {pause_d}"
+                f"{'tester_single_test_dump'} {throttle} {ramp_up_d} {measurement_d} {pause_d}"
             )
 
             test_file_name = self.get_test_file_name(i)
