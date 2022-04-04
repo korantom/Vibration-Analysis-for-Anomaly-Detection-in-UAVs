@@ -85,3 +85,19 @@ static int cmd_tester_infinite_print(const struct shell *shell, size_t argc, cha
 SHELL_CMD_REGISTER(tester_infinite_print, NULL, "...", cmd_tester_infinite_print);
 
 /* -------------------------------------------------------------------------- */
+static int cmd_tester_echo_arguments(const struct shell *shell, size_t argc, char **argv)
+{
+
+    k_msleep(100); // give enough time for echo, before following prints
+    printk("argc: %d\n", argc);
+    for (size_t i = 1; i < argc; i++)
+    {
+        printk("\t- argv[%d]: %d\n", i, atoi(argv[i]));
+    }
+
+    return 0;
+}
+
+SHELL_CMD_ARG_REGISTER(tester_echo_arguments, NULL, "echo up to 4 int arguments", cmd_tester_echo_arguments, 1, 4);
+
+/* -------------------------------------------------------------------------- */
