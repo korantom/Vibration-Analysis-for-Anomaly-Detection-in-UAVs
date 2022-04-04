@@ -59,7 +59,7 @@ while True:
         while (cmd := input("uart:~$")) == "":
             pass
 
-        cmd += "\r\n"
+        cmd += "\n"
         ser.write(cmd.encode("ascii"))
 
 
