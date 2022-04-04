@@ -101,3 +101,31 @@ static int cmd_tester_echo_arguments(const struct shell *shell, size_t argc, cha
 SHELL_CMD_ARG_REGISTER(tester_echo_arguments, NULL, "echo up to 4 int arguments", cmd_tester_echo_arguments, 1, 4);
 
 /* -------------------------------------------------------------------------- */
+
+int tester_init(void)
+{
+    tester_ready = false;
+
+    // INIT PWM
+    int res = pwm_init();
+    if (res)
+    {
+        return -1;
+    }
+
+    // ARM ESC (set throttle to 0)
+    res = pwm_arm();
+    if (res)
+    {
+        return -1;
+    }
+
+    // Safety wait before any test starts
+    k_msleep(10 * MSEC_PER_SEC);
+
+    tester_ready = true;
+
+    return 0;
+}
+
+/* -------------------------------------------------------------------------- */
