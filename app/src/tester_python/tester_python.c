@@ -129,3 +129,46 @@ int tester_init(void)
 }
 
 /* -------------------------------------------------------------------------- */
+
+// TODO dump raw bytes, let python handle conversion?
+
+void dump_ring_buffer_to_console()
+{
+    static char out_str[256];
+    int written = 0;
+    uint8_t *data;
+
+    const double multiplier = 0.001197100830078125f;
+    double x, y, z;
+
+    /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
+
+    while (1)
+    {
+        // CLAIM
+        int ringbuf_aloc_size = ring_buf_get_claim(&lis2dh12_ring_buf, &data, 6);
+        if (ringbuf_aloc_size != 6)
+        {
+            break;
+        }
+
+        // raw * (8*9.80665/1024/64)
+        x = *(int16_t *)&data[0] * multiplier;
+        y = *(int16_t *)&data[2] * multiplier;
+        z = *(int16_t *)&data[4] * multiplier;
+        // TODO: \r vs \r\n vs \n
+        written = snprintf(out_str, sizeof(out_str) - 1, "%.6lf, %.6lf, %.6lf\n", x, y, z);
+
+        // ...
+        printk("%s%s\n", DATA_PREFIX, out_str);
+
+        // FINISH
+        int finish_ret = ring_buf_get_finish(&lis2dh12_ring_buf, ringbuf_aloc_size);
+        if (finish_ret)
+        {
+            break;
+        }
+    }
+}
+
+/* -------------------------------------------------------------------------- */
