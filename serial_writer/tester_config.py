@@ -3,6 +3,7 @@ from typing import List
 
 from dataclasses import dataclass, field
 from dataclasses_json import dataclass_json
+from git import Repo
 
 from serial_wrapper import *
 
@@ -46,13 +47,26 @@ class TesterConfig:
     # test_config_shell_commands: List[str]
     # test_test_shell_command: str = "single_test_dump"
 
+    # TODO:
+    path: str = field(init=False)
+    git_hash: str = field(init=False)
+
     ############################################################################
 
     def __post_init__(self):
-        """Assembles/Create as uniqe path for given test (set of measurements)"""
+        # Assembles/Create as uniqe path for given test (set of measurements)
         dt = datetime.now()
         dt_str = dt.strftime("%Y_%m_%d_%H_%M_%S")
         self.path = f"{self.test_folder_path}/{self.test_folder_name}_{dt_str}"
 
+        # stores current commit hash
+        self.git_hash = Repo("./").git.rev_parse("HEAD")
+
 
 ################################################################################
+
+if __name__ == "__main__":
+
+    tester_config = TesterConfig()
+
+    print(f"{tester_config=}")
