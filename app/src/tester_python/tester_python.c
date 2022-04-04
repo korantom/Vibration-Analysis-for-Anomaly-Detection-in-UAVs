@@ -222,3 +222,37 @@ void single_test_dump(uint32_t throttle_percentage, uint32_t ramp_up_duration_se
 // TODO: continuous write
 
 /* -------------------------------------------------------------------------- */
+
+// Shell commands
+
+static int cmd_tester_init(const struct shell *shell, size_t argc, char **argv)
+{
+    ARG_UNUSED(argc);
+    ARG_UNUSED(argv);
+
+    tester_init();
+    return 0;
+}
+
+SHELL_CMD_REGISTER(tester_init, NULL, "Call tester_init()", cmd_tester_init);
+
+static int cmd_single_test_dump(const struct shell *shell, size_t argc, char **argv)
+{
+    ARG_UNUSED(argc);
+
+    uint32_t throttle_percentage = atoi(argv[1]);
+    uint32_t ramp_up_duration_sec = atoi(argv[2]);
+    uint32_t test_duration_sec = atoi(argv[3]);
+    uint32_t pause_duration_sec = atoi(argv[4]);
+
+    if ((throttle_percentage > 100) || (throttle_percentage < 0))
+    {
+        printk("ERROR: throttle_percentage=%d not in range [0-100].\n", throttle_percentage);
+        return 0;
+    }
+
+    single_test_dump(throttle_percentage, ramp_up_duration_sec, test_duration_sec, pause_duration_sec);
+    return 0;
+}
+
+SHELL_CMD_ARG_REGISTER(tester_single_test_dump, NULL, "Call single_test_dump()", cmd_single_test_dump, 5, 0);
