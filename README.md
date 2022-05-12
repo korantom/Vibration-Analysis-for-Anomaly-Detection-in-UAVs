@@ -32,6 +32,10 @@
       - prj.conf
 
 ---
+## TODO some fixes needed to be done in zephyr, either pprovide a fork with fixes or instruction on what to fix
+- e.g. to fix the `sdmmc_spi: Timeout while waiting for !255` error in `zephyr/drivers/disk/sdmmc_spi.c`
+add `.delay = 10` to ... `.cs = {...}`
+---
 # Other useful
 - [App development](https://docs.zephyrproject.org/latest/application/index.html#application)
 - Device tree
