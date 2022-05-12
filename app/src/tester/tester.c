@@ -63,18 +63,22 @@ static const uint32_t motor_speeds[] = {TEST_MOTOR_SPEEDS};
 static int motor_speed_count = sizeof(motor_speeds) / sizeof(motor_speeds[0]);
 
 static bool tester_ready = false;
+static int tester_counter = 0;
+static char current_test_folder_name[128] = TEST_FOLDER_NAME;
 
 /**
  * @brief Create a folder
  * @return   0 on success
  * @return < 0 on error
  */
-int create_test_folder(const char *path)
+int create_test_folder()
 {
-    int res = disk_create_folder(path);
+    snprintf(current_test_folder_name, sizeof(current_test_folder_name), "%s_%02d", TEST_FOLDER_NAME, tester_counter);
+    int res = disk_create_folder(current_test_folder_name);
+
     if (res)
     {
-        printk("Failed to create %s folder\n", path);
+        printk("Failed to create %s folder\n", current_test_folder_name);
     }
     return res;
 }
@@ -84,7 +88,7 @@ int save_config()
 {
     // TODO: move into disk
     char path[100];
-    snprintf(path, sizeof(path), "%s/%s/%s", DISK_MOUNT_PT, TEST_FOLDER_NAME, CONFIG_FILE_NAME);
+    snprintf(path, sizeof(path), "%s/%s/%s", DISK_MOUNT_PT, current_test_folder_name, CONFIG_FILE_NAME);
     disk_open_file(path);
 
     static char config[1000];
@@ -102,10 +106,18 @@ int tester_config(void)
 {
     tester_ready = false;
 
+    printk("motor speeds: ");
+    for (int i = 0; i < motor_speed_count; i++)
+    {
+        printk("%d%%, ", motor_speeds[i]);
+    }
+    printk("\n");
+    printk("prop states: %s\n", TEST_PROPELER_STATES);
+
     int res = 0;
 
     // CREATE TEST FOOLDER
-    create_test_folder(TEST_FOLDER_NAME);
+    create_test_folder();
     if (res)
     {
         return -1;
@@ -128,6 +140,7 @@ int tester_config(void)
     // ARM ESC (set throttle to 0)
     pwm_arm();
 
+    tester_counter++;
     tester_ready = true;
 
     return 0;
@@ -138,12 +151,10 @@ int tester_config(void)
 /* create a test_path, test_path = ... + test_name */
 void test_path_get(size_t t_num, size_t set_size, char *test_path)
 {
-    static const char test_types[] = {'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'};
-    char test_type = test_types[t_num % set_size];
     int set_count = t_num / set_size;
 
     // TODO: BEWARE FILE/PATH? NAME CANT EXCEED SOME LENGTH 12?
-    sprintf(test_path, "%s/%s_%c_%04d.csv", TEST_FOLDER_NAME, TEST_FILE_PREFIX, test_type, set_count);
+    sprintf(test_path, "%s/%s_%03dt_%04d.csv", current_test_folder_name, TEST_FILE_PREFIX, motor_speeds[t_num % set_size], set_count);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -159,6 +170,13 @@ int tester_start(void)
 
     printk("tester_start: TEST_SET_COUNT = %d, MOTOR_SPEED_COUNT = %d, => total tests = %d\n\n", TEST_SET_COUNT, motor_speed_count, TEST_SET_COUNT * motor_speed_count);
 
+    printk("motor speeds: ");
+    for (int i = 0; i < motor_speed_count; i++)
+    {
+        printk("%d%%, ", motor_speeds[i]);
+    }
+    printk("\n");
+
     static char test_path[100] = "";
     uint32_t motor_speed = 0;
 
@@ -172,6 +190,8 @@ int tester_start(void)
 
             pwm_set_throttle(0);
             tester_ready = false;
+
+            fifo_overrun = ring_buffer_insufficient_memory = false; // TODO: move to accel/lis2dh as function
             return -1;
         }
 
