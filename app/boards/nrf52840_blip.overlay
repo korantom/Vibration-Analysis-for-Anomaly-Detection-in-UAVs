@@ -23,17 +23,22 @@
                 compatible = "pwm-leds";
                 pwm_led0: pwm_led0 {
                         pwms = <&pwm1 31>;
-                        label = "Green PWM LED 0";
+                        label = "PWM ESC 0";
                 };
 
                 pwm_led1: pwm_led1 {
-                        pwms = <&pwm1 14>;
-                        label = "Blue PWM LED 1";
+                        pwms = <&pwm1 30>;
+                        label = "PWM ESC 1";
                 };
 
                 pwm_led2: pwm_led2 {
-                        pwms = <&pwm1 15>;
-                        label = "Red PWM LED 2";
+                        pwms = <&pwm1 02>;
+                        label = "PWM ESC 2";
+                };
+
+                pwm_led3: pwm_led3 {
+                        pwms = <&pwm1 03>;
+                        label = "PWM ESC 3";
                 };
        };
 
@@ -41,6 +46,7 @@
                pwm-led0 = &pwm_led0;
                pwm-led1 = &pwm_led1;
                pwm-led2 = &pwm_led2;
+               pwm-led3 = &pwm_led3;
        };
 };
 
@@ -48,10 +54,9 @@
        status = "okay";
        ch0-pin = <31>;
        //ch0-inverted; // invert only for LEDs
-       ch1-pin = <14>;
-       ch1-inverted;
-       ch2-pin = <15>;
-       ch2-inverted;
+       ch1-pin = <30>;
+       ch2-pin = <02>;
+       ch3-pin = <03>;
 };
 
 // TODO: new/rename nodes for the individual ESCs

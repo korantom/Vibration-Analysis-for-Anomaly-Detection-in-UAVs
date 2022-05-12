@@ -31,10 +31,17 @@ static const struct pwm_node pwm_node2 = {
     .flags = PWM2_FLAGS,
 };
 
+static const struct pwm_node pwm_node3 = {
+    .device = DEVICE_DT_GET(PWM3_CTLR),
+    .channel = PWM3_CHANNEL,
+    .flags = PWM3_FLAGS,
+};
+
 static const struct pwm_node pwm_node_list[] = {
     pwm_node0,
     pwm_node1,
     pwm_node2,
+    pwm_node3,
 };
 
 static int device_count = sizeof pwm_node_list / sizeof(struct pwm_node);
@@ -54,6 +61,7 @@ int pwm_init(void)
                     i, device, device->name);
             return -i;
         }
+        printk("name: %s, channel: %d\n", device->name, pwm_node_list[i].channel);
     }
 
     LOG_INF("pwm_init done, all %d devices ready", device_count);
