@@ -102,7 +102,7 @@ static void _writer()
     // TODO: write raw bytes convert later?
 
     static char out_str[80];
-    int byte_count = 3 * 2 * 32; // TODO: figure out max batch size to write
+    int byte_count = 3 * 2 * 16; // TODO: figure out max batch size to write
     uint8_t *data;
 
     // CLAIM
@@ -132,6 +132,50 @@ static void _writer()
     disk_flush();
     ////////////////////////////////////////////////////////////////////////////
 }
+
+void dump_all(const char *file_name)
+{
+    if (is_enabled)
+    {
+        LOG_WRN("Writer service enabled cant open file.");
+        return;
+    }
+
+    snprintf(path, sizeof(path), "%s/%s", DISK_MOUNT_PT, file_name);
+    disk_open_file(path);
+
+    static char out_str[80];
+    int byte_count = 3 * 2 * 32;
+    uint8_t *data;
+
+    while (!ring_buf_is_empty(&lis2dh12_ring_buf))
+    {
+
+        // CLAIM
+        int ringbuf_aloc_size = ring_buf_get_claim(&lis2dh12_ring_buf, &data, byte_count);
+        LOG_INF("ring_buf_get_claim: claimed, alocated = %d, %d, alocated%%6=%d", byte_count, ringbuf_aloc_size, ringbuf_aloc_size % 6);
+
+        const double multiplier = 0.001197100830078125f;
+        double x, y, z;
+        for (int i = 0; i < ringbuf_aloc_size; i += 6)
+        {
+            // raw * (8*9.80665/1024/64)
+            x = *(int16_t *)&data[i] * multiplier;
+            y = *(int16_t *)&data[i + 2] * multiplier;
+            z = *(int16_t *)&data[i + 4] * multiplier;
+            //
+
+            int written = snprintf(out_str, sizeof(out_str) - 1, "%.6lf, %.6lf, %.6lf\r\n", x, y, z);
+            disk_write_file(out_str, written);
+        }
+        // FINISH
+        int finish_ret = ring_buf_get_finish(&lis2dh12_ring_buf, ringbuf_aloc_size);
+        LOG_INF("RING BUFFER calimed, finished %d, %d bytes", ringbuf_aloc_size, finish_ret);
+    }
+
+    disk_close_file();
+}
+
 /* thread creation ----------------------------------------------------------- */
 
 K_THREAD_DEFINE(writer_tid, WRITER_STACK_SIZE,

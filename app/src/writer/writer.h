@@ -26,4 +26,7 @@ void enable_writer(const char *file_name);
  */
 void disable_writer(void);
 
+/** @brief Dump all of ring buffer content into a file */
+void dump_all(const char *file_name);
+
 #endif //__WRITER_H__
