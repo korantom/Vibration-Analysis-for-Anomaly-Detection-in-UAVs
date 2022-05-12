@@ -1,0 +1,4 @@
+black==22.3.0
+dataclasses-json==0.5.7
+GitPython==3.1.27
+pyserial==3.5
